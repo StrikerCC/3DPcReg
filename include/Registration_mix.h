@@ -17,7 +17,7 @@ struct Pc {
     std::shared_ptr<open3d::geometry::PointCloud> pc;
 };
 
-class pc_reg {
+class Registration_mix {
 private:
     /* data */
     bool visualize;
@@ -34,12 +34,12 @@ private:
     struct Pc frame_current_local;
 
 public:
-    pc_reg(/* args */);
-    ~pc_reg();
+    Registration_mix(/* args */);
+    ~Registration_mix();
     bool showBall();
     bool DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
-                 const Eigen::Matrix4d &transformation, const std::string& win_name="pc_reg") const;
-    bool DrawReg(const std::string& win_name="Current Registration Result") const;
+                 const Eigen::Matrix4d &transformation, const std::string& win_name="Registration_mix") const;
+    bool DrawReg(const std::string& win_name="Current Registration_mix Result") const;
 
     bool LoadModel(const char* file_name);
     bool TakeNewFrame(const char *file_name);
