@@ -4,7 +4,7 @@
 
 #ifndef INC_3DPCREG_POINTCLOUDREADER_H
 #define INC_3DPCREG_POINTCLOUDREADER_H
-
+#pragma once
 #include <iostream>
 #include <fstream>
 //#include <cassert>
@@ -16,6 +16,7 @@
 #include "open3d/geometry/PointCloud.h"
 
 struct sourceTargetAndPose {
+//    double voxel_sizes;
     std::shared_ptr<open3d::geometry::PointCloud> src;
     std::shared_ptr<open3d::geometry::PointCloud> tgt;
     Eigen::Matrix4d pose;

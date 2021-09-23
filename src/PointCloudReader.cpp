@@ -91,6 +91,7 @@ Eigen::Matrix4d PointCloudReader::readPose(std::string pose_file_path) {
 
 int PointCloudReader::get_length() {
     return int(PointCloudReader::frame_paths.size());
+//    return 2;
 }
 
 //PointCloudReader::~PointCloudReader() {}

@@ -47,7 +47,7 @@ bool Registration_mix::Register(const Eigen::Matrix4d* pose_gt) {
         return false;
     }
 
-    // compute error if gt was given
+    // compute statistic_reg if gt was given
 //    std::cout << "Frame # " << Registration_mix::num_frame << " takes seconds" << time_global+time_local << "\n   global takes " << time_global << " seconds" << "\n   local takes " << time_local << " seconds" << std::endl;
     if (pose_gt != nullptr) {
         std::tuple<float, float> error_rotation_translation = Registration_mix::ComputeRegError(Registration_mix::pose_current_global, *pose_gt);
@@ -81,6 +81,7 @@ bool Registration_mix::GlobalRegister() {
     auto registration_result = open3d::pipelines::registration::RegistrationRANSACBasedOnFeatureMatching(source, target,
                                                                                                          source_fpfh,
                                                                                                          target_fpfh,
+                                                                                                         true,
                                                                                                          max_correspondence_dis,
                                                                                                          open3d::pipelines::registration::TransformationEstimationPointToPoint(
                                                                                                                  false),

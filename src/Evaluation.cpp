@@ -1,17 +1,16 @@
 //
-// Created by cheng on 9/17/21.
+// Created by cheng on 9/22/21.
 //
 
-#include "Registration.h"
-
-Registration::Registration() = default;
+#include "Evaluation.h"
 
 
-verification::statistic_reg Registration::register_ransac_icp(const open3d::geometry::PointCloud& source,
+
+verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& source,
                                                               const open3d::geometry::PointCloud& target,
                                                               const Eigen::Matrix4d& tf_gt) {
     // vis
-    if (Registration::visualize) {
+    if (Evaluation::visualize) {
         DrawReg(source, target);
     }
     std::cout << "Original Source has " << source.points_.size() << " points" << std::endl;
@@ -20,8 +19,8 @@ verification::statistic_reg Registration::register_ransac_icp(const open3d::geom
     /// prepare registration parameters
     clock_t clock_start;
     float time_features_global {0.0}, time_features_local {0.0}, time_reg_global {0.0}, time_reg_local {0.0};
-    std::vector<double> primary_voxel_size_global = Registration::voxel_size_global;
-    std::vector<double> primary_voxel_size_local = Registration::voxel_size_local;
+    std::vector<double> primary_voxel_size_global = Evaluation::voxel_size_global;
+    std::vector<double> primary_voxel_size_local = Evaluation::voxel_size_local;
     SolveCorrespondenceAndRigidTransformation solver = SolveCorrespondenceAndRigidTransformation();
     verification::statistic_reg statistic_reg_;
 
@@ -62,7 +61,7 @@ verification::statistic_reg Registration::register_ransac_icp(const open3d::geom
         statistic_reg_.statistics.push_back(statistic_);
 
         // vis
-        if (Registration::visualize) {
+        if (Evaluation::visualize) {
             time_reg_global += (float) (clock() - clock_start) / CLOCKS_PER_SEC;
             DrawReg(*src_pc, *tgt_pc, tf_global, "Global registration result #" + std::to_string(i) + " voxel size " + std::to_string(voxel_size));
             clock_start = clock();
@@ -73,7 +72,7 @@ verification::statistic_reg Registration::register_ransac_icp(const open3d::geom
 //    std::cout << tf_global << std::endl;
 
     // vis
-    if (Registration::visualize) {
+    if (Evaluation::visualize) {
         DrawReg(source, target, tf_global, "Global registration final result");
     }
 
@@ -116,7 +115,7 @@ verification::statistic_reg Registration::register_ransac_icp(const open3d::geom
         statistic_reg_.statistics.push_back(statistic_);
 
         // vis
-        if (Registration::visualize) {
+        if (Evaluation::visualize) {
             time_reg_local += (float) (clock() - clock_start) / CLOCKS_PER_SEC;
             DrawReg(*src_pc, *tgt_pc, tf_local, "Local registration #" + std::to_string(i) + " voxel size " + std::to_string(voxel_size));
             clock_start = clock();
@@ -128,7 +127,7 @@ verification::statistic_reg Registration::register_ransac_icp(const open3d::geom
 //    std::cout << tf_gt << std::endl;
 
     // vis
-    if (Registration::visualize) {
+    if (Evaluation::visualize) {
         DrawReg(source, target, tf_local, "Local registration final result");
     }
     auto error = ComputeRegError(tf_gt, tf_local);
@@ -152,14 +151,84 @@ verification::statistic_reg Registration::register_ransac_icp(const open3d::geom
     statistic_reg_.time_total = time_features_global + time_reg_global + time_features_local + time_reg_local;
     statistic_reg_.error_r_final = error.error_rotation;
     statistic_reg_.error_t_final = error.error_translation;
-    statistic_reg_.voxel_size_final = primary_voxel_size_local.at(-1);
+//    statistic_reg_.voxel_size_final = primary_voxel_size_local.at(primary_voxel_size_local.size()-1);
+    statistic_reg_.voxel_size_final = primary_voxel_size_local[-1];
     return statistic_reg_;
 }
 
 
-//bool Registration::DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
-//                           const std::string &win_name) const {
-//    Eigen::Matrix4d transformation = Eigen::Matrix4d::Identity();
-//    Registration::DrawReg(source, target, transformation, win_name) ;
-//    return true;
-//}
+register_result ComputeRegError(const Eigen::Matrix4d &pose_1, const Eigen::Matrix4d &pose_2) {
+    Eigen::Matrix3d rotation_error = pose_1.block<3, 3>(0, 0) * pose_2.block<3 ,3>(0, 0).transpose();
+    Eigen::AngleAxisd rotation_error_vector;
+    rotation_error_vector.fromRotationMatrix(rotation_error);
+
+    Eigen::Vector3d translation_error = pose_1.block<3, 1>(0, 3) - pose_2.block<3, 1>(0, 3);
+
+    register_result result;
+    result.error_rotation = rotation_error_vector.angle();
+    result.error_translation = translation_error.norm();
+    return result;
+}
+
+
+bool Evaluation::recordError(verification::statistic_reg statistic_reg_) {
+    this->statistics.push_back(statistic_reg_);
+    return false;
+}
+
+bool Evaluation::addAvgStddev() {
+
+    // copy the map structure from statistic_reg, using the first statistic
+    verification::statistic_reg statistics_avg;
+    verification::statistic_reg statistics_stddev;
+
+    /// compute mean first
+    statistics_avg.src = "mean";
+    for (const auto& statistic : this->statistics) {
+        statistics_avg.time_total += statistic.time_total;
+        statistics_avg.error_r_final += statistic.error_r_final;
+        statistics_avg.error_t_final += statistic.error_t_final;
+        // TODO
+    }
+    statistics_avg.time_total /= (double) this->statistics.size();
+    statistics_avg.error_r_final /= (double) this->statistics.size();
+    statistics_avg.error_t_final /= (double) this->statistics.size();
+
+    // compute std dev then
+    statistics_stddev.src = "stddev";
+    for (const auto& statistic : this->statistics) {
+        statistics_stddev.time_total += pow(statistic.time_total-statistics_avg.time_total, 2);
+        statistics_stddev.error_r_final += pow(statistic.error_r_final-statistics_avg.error_r_final, 2);
+        statistics_stddev.error_t_final += pow(statistic.error_t_final-statistics_avg.error_t_final, 2);
+        // TODO
+    }
+    statistics_stddev.time_total /= (double) this->statistics.size();
+    statistics_stddev.error_r_final /= (double) this->statistics.size();
+    statistics_stddev.error_t_final /= (double) this->statistics.size();
+
+
+    /// add avg and stddev to statistic_reg
+    this->statistics.push_back(statistics_avg);
+    this->statistics.push_back(statistics_stddev);
+    return true;
+}
+
+bool Evaluation::save(const std::string& output_json_path) {
+    // compute mean and std dev
+    this->addAvgStddev();
+
+    /// write prettified JSON to output file
+    // struct statistic to json
+    std::vector<nlohmann::json> vector_json;
+    for (verification::statistic_reg statistic : this->statistics) {
+        nlohmann::json error_json(statistic);
+        vector_json.push_back(error_json);
+    }
+
+    nlohmann::json error_json(vector_json);
+    std::ofstream o(output_json_path);
+    o << error_json << std::endl;
+    return false;
+}
+
+Evaluation::Evaluation() = default;

@@ -3,7 +3,10 @@ project(3DPCREG VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 14)
 
-set(Open3D_DIR /home/cheng/sources/open3ds/install/lib/cmake/Open3D)
+#set(Open3D_DIR /home/cheng/sources/open3ds/install/lib/cmake/Open3D)
+#set(Open3D_DIR /home/cheng/sources/open3d13/install/lib/cmake/Open3D)
+set(Open3D_DIR /home/cheng/sources/open3d13/install_release/lib/cmake/Open3D)
+
 # set(Open3D_DIR /home/cheng/sources/open3ds/install/)
 find_package(Open3D REQUIRED)
 
@@ -18,7 +21,7 @@ if (Open3D_FOUND)
     link_directories(${Open3D_LIBRARY_DIRS})
     include_directories(${Open3D_INCLUDE_DIRS})
 
-    add_executable(${PROJECT_NAME} main.cpp src/Registration_mix.cpp src/utils.cpp include/utils.h src/PointCloudReader.cpp include/PointCloudReader.h src/FeatureCompute.cpp include/FeatureCompute.h src/SolveCorrespondenceAndRigidTransformation.cpp include/SolveCorrespondenceAndRigidTransformation.h src/Registration.cpp include/Registration.h)
+    add_executable(${PROJECT_NAME} main.cpp src/Registration_mix.cpp src/utils.cpp include/utils.h src/PointCloudReader.cpp include/PointCloudReader.h src/FeatureCompute.cpp include/FeatureCompute.h src/SolveCorrespondenceAndRigidTransformation.cpp include/SolveCorrespondenceAndRigidTransformation.h src/Registration.cpp include/Registration.h src/Evaluation.cpp include/Evaluation.h)
  
     target_link_libraries(${PROJECT_NAME} ${Open3D_LIBRARIES})
  

@@ -5,8 +5,12 @@
 #ifndef INC_3DPCREG_REGISTRATION_H
 #define INC_3DPCREG_REGISTRATION_H
 
+#include <cmath>
 #include <iostream>
+#include <fstream>
 #include <vector>
+#include <unordered_map>
+#include "nlohmann/json.hpp"
 #include "Eigen/Core"
 #include "open3d/Open3D.h"
 #include "open3d/geometry/PointCloud.h"
@@ -16,18 +20,17 @@
 
 class Registration {
 public:
-    float register_ransac_icp(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
-                             const Eigen::Matrix4d& tf_gt=Eigen::Matrix4d::Identity());
+    verification::statistic_reg register_ransac_icp(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
+                                                    const Eigen::Matrix4d& tf_gt=Eigen::Matrix4d::Identity());
 
-    bool DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
-                 const Eigen::Matrix4d &transformation=Eigen::Matrix4d::Identity(), const std::string &win_name="Registration") const;
 
     Registration();
+
 private:
     bool visualize = true;
-    std::vector<double> voxel_size_global {5};
-    std::vector<double> voxel_size_local {6, 3, 1, 0.4};
-//    std::vector<double> voxel_size_local {5};
+    std::vector<double> voxel_size_global {6, 4};
+    std::vector<double> voxel_size_local {5, 3, 1, 0.4};
+    std::vector<verification::statistic_reg> statistics;
 };
 
 

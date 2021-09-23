@@ -14,12 +14,12 @@
 class SolveCorrespondenceAndRigidTransformation {
 public:
     SolveCorrespondenceAndRigidTransformation();
-    Eigen::Matrix4d solve_icp(std::shared_ptr<open3d::geometry::PointCloud> const& src,
+    open3d::pipelines::registration::RegistrationResult solve_icp(std::shared_ptr<open3d::geometry::PointCloud> const& src,
                    std::shared_ptr<open3d::geometry::PointCloud> const& tgt,
                    double voxel_size,
                    const Eigen::Matrix4d& tf=Eigen::Matrix4d::Identity());
 
-    Eigen::Matrix4d solve_ransac(std::shared_ptr<open3d::geometry::PointCloud> const& src,
+    open3d::pipelines::registration::RegistrationResult solve_ransac(std::shared_ptr<open3d::geometry::PointCloud> const& src,
                       std::shared_ptr<open3d::pipelines::registration::Feature> const&  src_feature,
                       std::shared_ptr<open3d::geometry::PointCloud> const& tgt,
                       std::shared_ptr<open3d::pipelines::registration::Feature> const& tgt_feature,

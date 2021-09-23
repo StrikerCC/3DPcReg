@@ -15,15 +15,50 @@ bool IsCloseEnough(int num1, int num2) {
     return IsCloseEnough((float) num1, (float) num2);
 }
 
-register_result ComputeRegError(const Eigen::Matrix4d &pose_1, const Eigen::Matrix4d &pose_2) {
-    Eigen::Matrix3d rotation_error = pose_1.block<3, 3>(0, 0) * pose_2.block<3 ,3>(0, 0).transpose();
-    Eigen::AngleAxisd rotation_error_vector;
-    rotation_error_vector.fromRotationMatrix(rotation_error);
+namespace verification {
 
-    Eigen::Vector3d translation_error = pose_1.block<3, 1>(0, 3) - pose_2.block<3, 1>(0, 3);
+    nlohmann::json to_json_helper_(const statistic& statistic_) {
+        nlohmann::json j = nlohmann::json{
+                {"method", statistic_.method},
+                {"voxel_size", statistic_.voxel_size},
+                {"time", statistic_.time},
+                {"error_r", statistic_.error_r},
+                {"error_t", statistic_.error_t},
+        };
+        return j;
+    }
 
-    register_result result;
-    result.error_rotation = rotation_error_vector.angle();
-    result.error_translation = translation_error.norm();
-    return result;
+    void to_json(nlohmann::json &j, const statistic_reg &statistics_) {
+        j = nlohmann::json{
+                {"src",           statistics_.src},
+                {"time_total",    statistics_.time_total},
+                {"error_r_final", statistics_.error_r_final},
+                {"error_t_final", statistics_.error_t_final},
+        };
+
+        std::vector<nlohmann::json> statistics_json;
+        for (const verification::statistic& statistic_ : statistics_.statistics) {
+            statistics_json.push_back(verification::to_json_helper_(statistic_));
+        }
+        j["statistics"] =statistics_json;
+    }
+}
+
+bool DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
+                           const Eigen::Matrix4d &transformation, const std::string &win_name) {
+    if (source.points_.empty() or target.points_.empty()) {
+        return false;
+    }
+    std::shared_ptr<open3d::geometry::PointCloud> source_transformed_ptr(new open3d::geometry::PointCloud);
+    std::shared_ptr<open3d::geometry::PointCloud> target_ptr(new open3d::geometry::PointCloud);
+
+    *source_transformed_ptr = source;
+    source_transformed_ptr->Transform(transformation);
+    source_transformed_ptr->PaintUniformColor({0.0, 0.0, 1.0});
+
+    *target_ptr = target;
+    target_ptr->PaintUniformColor({0.0, 1.0, 0.0});
+
+    open3d::visualization::DrawGeometries({source_transformed_ptr, target_ptr}, win_name);
+    return true;
 }
