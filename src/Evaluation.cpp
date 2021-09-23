@@ -107,7 +107,7 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
 
 
         // statistic
-        statistic_.method = "ransac";
+        statistic_.method = "icp";
         statistic_.voxel_size = voxel_size;
         statistic_.time = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
         statistic_.error_r = error.error_rotation;
@@ -156,24 +156,9 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
     return statistic_reg_;
 }
 
-
-register_result ComputeRegError(const Eigen::Matrix4d &pose_1, const Eigen::Matrix4d &pose_2) {
-    Eigen::Matrix3d rotation_error = pose_1.block<3, 3>(0, 0) * pose_2.block<3 ,3>(0, 0).transpose();
-    Eigen::AngleAxisd rotation_error_vector;
-    rotation_error_vector.fromRotationMatrix(rotation_error);
-
-    Eigen::Vector3d translation_error = pose_1.block<3, 1>(0, 3) - pose_2.block<3, 1>(0, 3);
-
-    register_result result;
-    result.error_rotation = rotation_error_vector.angle();
-    result.error_translation = translation_error.norm();
-    return result;
-}
-
-
 bool Evaluation::recordError(verification::statistic_reg statistic_reg_) {
     this->statistics.push_back(statistic_reg_);
-    return false;
+    return true;
 }
 
 bool Evaluation::addAvgStddev() {
@@ -188,11 +173,25 @@ bool Evaluation::addAvgStddev() {
         statistics_avg.time_total += statistic.time_total;
         statistics_avg.error_r_final += statistic.error_r_final;
         statistics_avg.error_t_final += statistic.error_t_final;
-        // TODO
+        // add step statistic mean
+        for (int i = 0; i < statistic.statistics.size(); i++) {
+            if (statistics_avg.statistics.empty()) statistics_avg.statistics = std::vector<verification::statistic> (statistic.statistics.size());
+            statistics_avg.statistics[i].error_r += statistic.statistics[i].error_r;
+            statistics_avg.statistics[i].error_t += statistic.statistics[i].error_t;
+            statistics_avg.statistics[i].time += statistic.statistics[i].time;
+            statistics_avg.statistics[i].voxel_size += statistic.statistics[i].voxel_size;
+        }
     }
     statistics_avg.time_total /= (double) this->statistics.size();
     statistics_avg.error_r_final /= (double) this->statistics.size();
     statistics_avg.error_t_final /= (double) this->statistics.size();
+    for (int i = 0; i < this->statistics[0].statistics.size(); i++) {
+        statistics_avg.statistics[i].error_r /= (double) this->statistics.size();
+        statistics_avg.statistics[i].error_t /= (double) this->statistics.size();
+        statistics_avg.statistics[i].time /= (double) this->statistics.size();
+        statistics_avg.statistics[i].voxel_size /= (double) this->statistics.size();
+        statistics_avg.statistics[i].method = this->statistics[0].statistics[i].method;
+    }
 
     // compute std dev then
     statistics_stddev.src = "stddev";
@@ -200,12 +199,25 @@ bool Evaluation::addAvgStddev() {
         statistics_stddev.time_total += pow(statistic.time_total-statistics_avg.time_total, 2);
         statistics_stddev.error_r_final += pow(statistic.error_r_final-statistics_avg.error_r_final, 2);
         statistics_stddev.error_t_final += pow(statistic.error_t_final-statistics_avg.error_t_final, 2);
-        // TODO
+        // add step statistic stddev
+        for (int i = 0; i < statistic.statistics.size(); i++) {
+            if (statistics_stddev.statistics.empty()) statistics_stddev.statistics = std::vector<verification::statistic> (statistic.statistics.size());
+            statistics_stddev.statistics[i].error_r += pow(statistic.statistics[i].error_r-statistics_avg.statistics[i].error_r, 2);
+            statistics_stddev.statistics[i].error_t +=  pow(statistic.statistics[i].error_t-statistics_avg.statistics[i].error_t, 2);
+            statistics_stddev.statistics[i].time +=  pow(statistic.statistics[i].time-statistics_avg.statistics[i].time, 2);
+            statistics_stddev.statistics[i].voxel_size +=  pow(statistic.statistics[i].voxel_size-statistics_avg.statistics[i].voxel_size, 2);
+        }
     }
-    statistics_stddev.time_total /= (double) this->statistics.size();
-    statistics_stddev.error_r_final /= (double) this->statistics.size();
-    statistics_stddev.error_t_final /= (double) this->statistics.size();
-
+    statistics_stddev.time_total = sqrt(statistics_stddev.time_total / (double) this->statistics.size());
+    statistics_stddev.error_r_final = sqrt(statistics_stddev.error_r_final / (double) this->statistics.size());
+    statistics_stddev.error_t_final = sqrt(statistics_stddev.error_t_final / (double) this->statistics.size());
+    for (int i = 0; i < this->statistics[0].statistics.size(); i++) {
+        statistics_stddev.statistics[i].error_r = sqrt(statistics_stddev.statistics[i].error_r / (double) this->statistics.size());
+        statistics_stddev.statistics[i].error_t = sqrt(statistics_stddev.statistics[i].error_t / (double) this->statistics.size());
+        statistics_stddev.statistics[i].time = sqrt(statistics_stddev.statistics[i].time / (double) this->statistics.size());
+        statistics_stddev.statistics[i].voxel_size = sqrt(statistics_stddev.statistics[i].voxel_size / (double) this->statistics.size());
+        statistics_stddev.statistics[i].method = this->statistics[0].statistics[i].method;
+    }
 
     /// add avg and stddev to statistic_reg
     this->statistics.push_back(statistics_avg);
@@ -213,7 +225,24 @@ bool Evaluation::addAvgStddev() {
     return true;
 }
 
-bool Evaluation::save(const std::string& output_json_path) {
+bool Evaluation::save(const std::string& output_dir) {
+    std::string output_dir_ = output_dir;
+    if (output_dir_.back() != '/') {
+        output_dir_ += + "/";
+    }
+    std::string output_json_path;
+    for (int i = 1; i < 1000; i++) {
+        output_json_path = output_dir_;
+        for (int j = 0; j < 5-int(log10((double)i))-1; j++) {   // add 0 in front
+            output_json_path += '0';
+        }
+        output_json_path += std::to_string(i) + ".json";    // final output path
+        if (access(output_json_path.data(), 0) == -1) {
+            break;
+        }
+    }
+    std::cout << "Saving to " << output_json_path << std::endl;
+
     // compute mean and std dev
     this->addAvgStddev();
 
@@ -228,7 +257,8 @@ bool Evaluation::save(const std::string& output_json_path) {
     nlohmann::json error_json(vector_json);
     std::ofstream o(output_json_path);
     o << error_json << std::endl;
-    return false;
+    std::cout << "Saved to " << output_json_path << std::endl;
+    return true;
 }
 
 Evaluation::Evaluation() = default;

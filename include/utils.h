@@ -22,6 +22,7 @@ struct register_result {
     double error_rotation {0.0};
     double error_translation {0.0};
 };
+
 register_result ComputeRegError(const Eigen::Matrix4d &pose_1, const Eigen::Matrix4d &pose_2);
 
 

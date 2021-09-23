@@ -15,6 +15,19 @@ bool IsCloseEnough(int num1, int num2) {
     return IsCloseEnough((float) num1, (float) num2);
 }
 
+register_result ComputeRegError(const Eigen::Matrix4d &pose_1, const Eigen::Matrix4d &pose_2) {
+    Eigen::Matrix3d rotation_error = pose_1.block<3, 3>(0, 0) * pose_2.block<3 ,3>(0, 0).transpose();
+    Eigen::AngleAxisd rotation_error_vector;
+    rotation_error_vector.fromRotationMatrix(rotation_error);
+
+    Eigen::Vector3d translation_error = pose_1.block<3, 1>(0, 3) - pose_2.block<3, 1>(0, 3);
+
+    register_result result;
+    result.error_rotation = rotation_error_vector.angle() * 180.0 / M_PI;
+    result.error_translation = translation_error.norm();
+    return result;
+}
+
 namespace verification {
 
     nlohmann::json to_json_helper_(const statistic& statistic_) {

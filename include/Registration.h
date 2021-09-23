@@ -28,8 +28,8 @@ public:
 
 private:
     bool visualize = true;
-    std::vector<double> voxel_size_global {6, 4};
-    std::vector<double> voxel_size_local {5, 3, 1, 0.4};
+//    std::vector<double> voxel_size_global {6, 4};
+//    std::vector<double> voxel_size_local {5, 0.8};
     std::vector<verification::statistic_reg> statistics;
 };
 

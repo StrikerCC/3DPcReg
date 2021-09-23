@@ -10,6 +10,7 @@
 #include "Registration.h"
 #include "PointCloudReader.h"
 #include "nlohmann/json.hpp"
+#include <unistd.h>
 
 
 class Evaluation {
@@ -25,7 +26,7 @@ public:
 private:
 
     bool visualize = false;
-    std::vector<double> voxel_size_global {6, 4};
+    std::vector<double> voxel_size_global {4};
     std::vector<double> voxel_size_local {5, 3, 1, 0.4};
     std::vector<verification::statistic_reg> statistics;
 
