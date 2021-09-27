@@ -23,7 +23,7 @@ public:
                       std::shared_ptr<open3d::pipelines::registration::Feature> const&  src_feature,
                       std::shared_ptr<open3d::geometry::PointCloud> const& tgt,
                       std::shared_ptr<open3d::pipelines::registration::Feature> const& tgt_feature,
-                      double voxel_size,
+                      float voxel_size,
                       const Eigen::Matrix4d& tf=Eigen::Matrix4d::Identity());
 
 private:

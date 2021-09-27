@@ -16,34 +16,37 @@ statistics Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& s
     std::cout << "Original Source has " << source.points_.size() << " points" << std::endl;
     std::cout << "Original Target has " << target.points_.size() << " points" << std::endl;
 
+    std::chrono::steady_clock::time_point t_g_f_0 = std::chrono::steady_clock::now();
+
     /// prepare registration parameters
-    clock_t clock_start;
     float time_features_global {0.0}, time_features_local {0.0}, time_reg_global {0.0}, time_reg_local {0.0};
-    std::vector<double> primary_voxel_size_global = Evaluation::voxel_size_global;
-    std::vector<double> primary_voxel_size_local = Evaluation::voxel_size_local;
+    std::vector<float> primary_voxel_size_global = Evaluation::voxel_size_global;
+    std::vector<float> primary_voxel_size_local = Evaluation::voxel_size_local;
     SolveCorrespondenceAndRigidTransformation solver = SolveCorrespondenceAndRigidTransformation();
     statistics statistic_reg_;
 
-    /// get features ready
+    /// get global features ready
     std::cout << "Compute global feature" << std::endl;
-    clock_start = clock();
-
     FeatureCompute features = FeatureCompute();
     std::vector<PcNormalFpfh> src_features_global = features.getFPHFFeatures(source, primary_voxel_size_global);
     std::vector<PcNormalFpfh> tgt_features_global = features.getFPHFFeatures(target, primary_voxel_size_global);
 
-    time_features_global = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
+    std::chrono::steady_clock::time_point t_g_f_1 = std::chrono::steady_clock::now();
+
+    time_features_global = (float) (std::chrono::duration_cast<std::chrono::duration<float>>(t_g_f_1 - t_g_f_0).count());
 
     /// start global register
     std::cout << "Global Reg" << std::endl;
-    clock_start = clock();
+    std::chrono::steady_clock::time_point t_g_r_0 = std::chrono::steady_clock::now();
 
     Eigen::Matrix4d tf_global = Eigen::Matrix4d::Identity();
     for (int i = 0; i < primary_voxel_size_global.size(); ++i) {
+        std::chrono::steady_clock::time_point t_g_r_iter = std::chrono::steady_clock::now();
+
         assert (primary_voxel_size_global.at(i) == src_features_global.at(i).voxel_size);
         assert (primary_voxel_size_global.at(i) == tgt_features_global.at(i).voxel_size);
 
-        double voxel_size = primary_voxel_size_global.at(i);
+        float voxel_size = primary_voxel_size_global.at(i);
         auto src_pc = src_features_global.at(i).pc, tgt_pc = tgt_features_global.at(i).pc;
         auto src_feature = src_features_global.at(i).fpfh,  tgt_feature = tgt_features_global.at(i).fpfh;
         statistics statistic_;
@@ -52,48 +55,55 @@ statistics Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& s
         tf_global = global_result.transformation_;
         auto error = ComputeRegError(tf_gt, tf_global);
 
-        // statistic
+        // statistic recording
         statistic_.method = "ransac";
-        statistic_.voxel_size = voxel_size;
-        statistic_.time = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
+        statistic_.voxel_size = (float) voxel_size;
+        statistic_.num_points_src = (int) src_pc->points_.size();
+        statistic_.num_points_tgt = (int) tgt_pc->points_.size();
+        statistic_.time = (float) (std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - t_g_r_iter).count());
         statistic_.error_r = error.error_rotation;
         statistic_.error_t = error.error_translation;
         statistic_reg_.substatistics.push_back(statistic_);
 
+        std::cout << "Ransac iteration "  << i << ", voxel size " << voxel_size << ", reg in " << statistic_.time << " seconds" << std::endl;
+        std::cout << "      Source has " << src_pc->points_.size() << " points" << std::endl;
+        std::cout << "      Target has " << tgt_pc->points_.size() << " points" << std::endl;
+
         // vis
         if (Evaluation::visualize) {
-            time_reg_global += (float) (clock() - clock_start) / CLOCKS_PER_SEC;
             DrawReg(*src_pc, *tgt_pc, tf_global, "Global registration result #" + std::to_string(i) + " voxel size " + std::to_string(voxel_size));
-            clock_start = clock();
         }
     }
 
-    time_reg_global = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
-//    std::cout << tf_global << std::endl;
+    std::chrono::steady_clock::time_point t_g_r_1 = std::chrono::steady_clock::now();
+    time_reg_global = (float) (std::chrono::duration_cast<std::chrono::duration<float>>(t_g_r_1 - t_g_r_0).count());
 
     // vis
     if (Evaluation::visualize) {
         DrawReg(source, target, tf_global, "Global registration final result");
     }
 
-    /// get features ready
+    /// get local features ready
     std::cout << "Compute local feature" << std::endl;
-    clock_start = clock();
+    std::chrono::steady_clock::time_point t_l_f_0 = std::chrono::steady_clock::now();
 
     std::vector<PcNormal> src_features_local = features.getNormalFeature(source, primary_voxel_size_local);
     std::vector<PcNormal> tgt_features_local = features.getNormalFeature(target, primary_voxel_size_local);
 
-    time_features_local = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
+    std::chrono::steady_clock::time_point t_l_f_1 = std::chrono::steady_clock::now();
+    time_features_local = (float) (std::chrono::duration_cast<std::chrono::duration<float>>(t_l_f_1 - t_l_f_0).count());
 
     /// start local reg
     std::cout << "Local Reg" << std::endl;
-    clock_start = clock();
+    std::chrono::steady_clock::time_point t_l_r_0 = std::chrono::steady_clock::now();
 
     Eigen::Matrix4d tf_local = tf_global;
     for (int i = 0; i < primary_voxel_size_local.size(); ++i) {
+        std::chrono::steady_clock::time_point t_l_r_iter = std::chrono::steady_clock::now();
+
         assert (primary_voxel_size_local.at(i) == src_features_local.at(i).voxel_size);
         assert (primary_voxel_size_local.at(i) == tgt_features_local.at(i).voxel_size);
-        double voxel_size = primary_voxel_size_local.at(i);
+        float voxel_size = primary_voxel_size_local.at(i);
         auto src_pc = src_features_local.at(i).pc, tgt_pc = tgt_features_local.at(i).pc;
         statistics statistic_;
 
@@ -101,28 +111,28 @@ statistics Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& s
         tf_local = icp_result.transformation_;
         auto error = ComputeRegError(tf_gt, tf_local);
 
-        std::cout << "ICP iteration "  << i << " voxel size " << voxel_size << std::endl;
-        std::cout << "      Source has " << src_pc->points_.size() << " points" << std::endl;
-        std::cout << "      Target has " << tgt_pc->points_.size() << " points" << std::endl;
-
-
-        // statistic
+        // statistic recording
         statistic_.method = "icp";
         statistic_.voxel_size = voxel_size;
-        statistic_.time = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
+        statistic_.num_points_src = (int) src_pc->points_.size();
+        statistic_.num_points_tgt = (int) tgt_pc->points_.size();
+        statistic_.time = (float) (std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::steady_clock::now() - t_l_r_iter).count());
         statistic_.error_r = error.error_rotation;
         statistic_.error_t = error.error_translation;
         statistic_reg_.substatistics.push_back(statistic_);
 
+        std::cout << "ICP iteration "  << i << " voxel size " << voxel_size << ", reg in " << statistic_.time<< " seconds" << std::endl;
+        std::cout << "      Source has " << src_pc->points_.size() << " points" << std::endl;
+        std::cout << "      Target has " << tgt_pc->points_.size() << " points" << std::endl;
+
         // vis
         if (Evaluation::visualize) {
-            time_reg_local += (float) (clock() - clock_start) / CLOCKS_PER_SEC;
             DrawReg(*src_pc, *tgt_pc, tf_local, "Local registration #" + std::to_string(i) + " voxel size " + std::to_string(voxel_size));
-            clock_start = clock();
         }
     }
+    std::chrono::steady_clock::time_point t_l_r_1 = std::chrono::steady_clock::now();
+    time_reg_local = (float) (std::chrono::duration_cast<std::chrono::duration<float>>(t_l_r_1 - t_l_r_0).count());
 
-    time_reg_local += (float) (clock() - clock_start) / CLOCKS_PER_SEC;
 //    std::cout << tf_local << std::endl;
 //    std::cout << tf_gt << std::endl;
 
@@ -130,28 +140,22 @@ statistics Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& s
     if (Evaluation::visualize) {
         DrawReg(source, target, tf_local, "Local registration final result");
     }
+
+    // compute statistic_reg if gt was given
     auto error = ComputeRegError(tf_gt, tf_local);
-    std::cout << "Time global feature computing " << time_features_global << std::endl;
-    std::cout << "Time global registration      " << time_reg_global << std::endl;
-    std::cout << "Time local feature computing  " << time_features_local << std::endl;
-    std::cout << "Time local registration      " << time_reg_local << std::endl;
+    std::cout << "Time global feature computing " << time_features_global << "seconds" << std::endl;
+    std::cout << "Time global registration      " << time_reg_global << "seconds" << std::endl;
+    std::cout << "Time local feature computing  " << time_features_local << "seconds" << std::endl;
+    std::cout << "Time local registration      " << time_reg_local << "seconds" << std::endl;
     std::cout << "Rotation statistic_reg            " << error.error_rotation << " degree" << std::endl;
     std::cout << "Translation statistic_reg         " << error.error_translation << "  mm" << std::endl;
 
-    // compute statistic_reg if gt was given
-
-//    std::cout << "Frame # " << Registration_mix::num_frame << " takes seconds" << time_global+time_local << "\n   global takes " << time_global << " seconds" << "\n   local takes " << time_local << " seconds" << std::endl;
-//    if (pose_gt != nullptr) {
-//        std::tuple<float, float> error_rotation_translation = Registration_mix::ComputeRegError(Registration_mix::pose_current_global, *pose_gt);
-//        std::cout << "Error " << std::endl;
-//        std::cout << " Rotation   " << std::to_string(std::get<0>(error_rotation_translation)) << std::endl;
-//        std::cout << " Translation" << std::to_string(std::get<0>(error_rotation_translation)) << std::endl;
-//        std::cout << std::endl;
-//    }
-
     statistic_reg_.method = "ransac_icp";
 //    statistic_reg_.src = ;
-    statistic_reg_.voxel_size = primary_voxel_size_local.at(primary_voxel_size_local.size()-1);
+//    statistic_reg_.voxel_size = ;
+    statistic_reg_.num_points_src = (int) source.points_.size();
+    statistic_reg_.num_points_tgt = (int) target.points_.size();
+//    statistic_reg_.noise_src = 0.0;
     statistic_reg_.time = time_features_global + time_reg_global + time_features_local + time_reg_local;
     statistic_reg_.error_r = error.error_rotation;
     statistic_reg_.error_t = error.error_translation;
@@ -159,7 +163,7 @@ statistics Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& s
     return statistic_reg_;
 }
 
-bool Evaluation::recordError(const statistics& statistic_reg_) {
+bool Evaluation::recordstatistics(const statistics& statistic_reg_) {
     this->statistics_eval.push_back(statistic_reg_);
     return true;
 }
@@ -245,6 +249,11 @@ bool Evaluation::addSuccessCaseAvgStddev() {
 }
 
 bool Evaluation::save(const std::string& output_dir) {
+    if (access(output_dir.data(), 0) == -1) {
+        std::cout << "Path " << output_dir << " doesn't exist, aborting saving" << std::endl;
+        return false;
+    }
+
     std::string output_dir_ = output_dir;
     if (output_dir_.back() != '/') {
         output_dir_ += + "/";
@@ -265,11 +274,13 @@ bool Evaluation::save(const std::string& output_dir) {
     std::cout << "Saving to " << output_json_path << std::endl;
 
     // compute mean and std dev
-    this->addOrgAvgStddev();
-    this->addSuccessCaseAvgStddev();
+//    this->addOrgAvgStddev();
+//    this->addSuccessCaseAvgStddev();
     /// write prettified JSON to output file
     // struct statistic to json
     std::vector<nlohmann::json> vector_json;
+    // insert first input json file to output json file
+
     for (statistics statistic : this->statistics_eval) {
         vector_json.push_back(statistic.to_json());
     }

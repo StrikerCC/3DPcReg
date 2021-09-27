@@ -51,7 +51,7 @@ open3d::pipelines::registration::RegistrationResult SolveCorrespondenceAndRigidT
                                                              std::shared_ptr<open3d::pipelines::registration::Feature> const& src_feature,
                                                              std::shared_ptr<open3d::geometry::PointCloud> const& tgt,
                                                              std::shared_ptr<open3d::pipelines::registration::Feature> const& tgt_feature,
-                                                             double voxel_size,
+                                                             float voxel_size,
                                                              const Eigen::Matrix4d& tf) {
     int max_iteration = 4000000, max_validation = 1000;
     double max_correspondence_dis = voxel_size, distance_threshold = voxel_size;

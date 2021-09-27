@@ -6,8 +6,10 @@
 #define INC_3DPCREG_EVALUATION_H
 
 #pragma once
-#include "nlohmann/json.hpp"
+#include <ctime>
+#include <chrono>
 #include <unistd.h>
+#include "nlohmann/json.hpp"
 //#include "Registration.h"
 #include "PointCloudReader.h"
 #include "SolveCorrespondenceAndRigidTransformation.h"
@@ -22,15 +24,15 @@ public:
                         const open3d::geometry::PointCloud& target,
                         const Eigen::Matrix4d& tf_gt);
 
-    bool recordError(const statistics& statistic_reg_);
+    bool recordstatistics(const statistics& statistic_reg_);
     bool save(const std::string& output_json_path = "");
 
 private:
 
     bool visualize = false;
-    std::vector<double> voxel_size_global {4};
-    std::vector<double> voxel_size_local {5, 3, 1, 0.4};
-    double error_r_threshold = 3.0, error_t_threshold = 5.0;
+    std::vector<float> voxel_size_global {4};
+    std::vector<float> voxel_size_local {5, 3, 1, 0.4};
+    float error_r_threshold = 3.0, error_t_threshold = 5.0;
     std::vector<statistics> statistics_eval;
 
     bool addOrgAvgStddev();

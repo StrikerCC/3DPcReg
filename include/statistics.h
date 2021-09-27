@@ -15,7 +15,10 @@ public:
 
     std::string method;
     std::string src;
-    double voxel_size = 0.0;
+    float voxel_size = 0.0;
+    int num_points_src = 0;
+    int num_points_tgt = 0;
+    float noise_src = 0.0;
     double time = 0.0;
     double error_r = 0.0;
     double error_t = 0.0;

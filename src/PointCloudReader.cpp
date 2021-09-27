@@ -102,7 +102,7 @@ PointCloudReaderFromJson::PointCloudReaderFromJson() = default;
 
 //PointCloudReaderFromJson::~PointCloudReaderFromJson() {}
 
-bool PointCloudReaderFromJson::loadJson(const std::string& root_path, const std::string& file_path) {
+bool PointCloudReaderFromJson::loadDataFromRootDirAndJson(const std::string& root_path, const std::string& file_path) {
     std::ifstream input_file(file_path);
     input_file >> PointCloudReaderFromJson::sources;
 
@@ -133,3 +133,16 @@ bool PointCloudReaderFromJson::loadJson(const std::string& root_path, const std:
     }
     return true;
 }
+
+std::string PointCloudReaderFromJson::getSourcePath(int i) {
+    return PointCloudReaderFromJson::frame_paths.at(i);
+}
+
+float PointCloudReaderFromJson::getVoxelSize(int i) {
+    return PointCloudReaderFromJson::sources.at(i).at("voxel_size");
+}
+
+float PointCloudReaderFromJson::getSourceNoise(int i) {
+    return PointCloudReaderFromJson::sources.at(i).at("sigma");
+}
+

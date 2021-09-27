@@ -21,8 +21,8 @@ struct PcNormal {
 class FeatureCompute {
 public:
     FeatureCompute();
-    std::vector<PcNormalFpfh> getFPHFFeatures(const open3d::geometry::PointCloud& pc, const std::vector<double>& voxel_sizes) const;
-    std::vector<PcNormal> getNormalFeature(const open3d::geometry::PointCloud& pc, const std::vector<double>& voxel_sizes) const;
+    std::vector<PcNormalFpfh> getFPHFFeatures(const open3d::geometry::PointCloud& pc, const std::vector<float>& voxel_sizes) const;
+    std::vector<PcNormal> getNormalFeature(const open3d::geometry::PointCloud& pc, const std::vector<float>& voxel_sizes) const;
 
 private:
 //    std::vector<double> voxel_sizes_down_sampling {{5, 3, 1}};
