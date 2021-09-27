@@ -28,35 +28,6 @@ register_result ComputeRegError(const Eigen::Matrix4d &pose_1, const Eigen::Matr
     return result;
 }
 
-namespace verification {
-
-    nlohmann::json to_json_helper_(const statistic& statistic_) {
-        nlohmann::json j = nlohmann::json{
-                {"method", statistic_.method},
-                {"voxel_size", statistic_.voxel_size},
-                {"time", statistic_.time},
-                {"error_r", statistic_.error_r},
-                {"error_t", statistic_.error_t},
-        };
-        return j;
-    }
-
-    void to_json(nlohmann::json &j, const statistic_reg &statistics_) {
-        j = nlohmann::json{
-                {"src",           statistics_.src},
-                {"time_total",    statistics_.time_total},
-                {"error_r_final", statistics_.error_r_final},
-                {"error_t_final", statistics_.error_t_final},
-        };
-
-        std::vector<nlohmann::json> statistics_json;
-        for (const verification::statistic& statistic_ : statistics_.statistics) {
-            statistics_json.push_back(verification::to_json_helper_(statistic_));
-        }
-        j["statistics"] =statistics_json;
-    }
-}
-
 bool DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
                            const Eigen::Matrix4d &transformation, const std::string &win_name) {
     if (source.points_.empty() or target.points_.empty()) {

@@ -21,7 +21,7 @@ if (Open3D_FOUND)
     link_directories(${Open3D_LIBRARY_DIRS})
     include_directories(${Open3D_INCLUDE_DIRS})
 
-    add_executable(${PROJECT_NAME} main.cpp src/Registration_mix.cpp src/utils.cpp include/utils.h src/PointCloudReader.cpp include/PointCloudReader.h src/FeatureCompute.cpp include/FeatureCompute.h src/SolveCorrespondenceAndRigidTransformation.cpp include/SolveCorrespondenceAndRigidTransformation.h src/Registration.cpp include/Registration.h src/Evaluation.cpp include/Evaluation.h)
+    add_executable(${PROJECT_NAME} main.cpp src/Registration_mix.cpp src/utils.cpp include/utils.h src/PointCloudReader.cpp include/PointCloudReader.h src/FeatureCompute.cpp include/FeatureCompute.h src/SolveCorrespondenceAndRigidTransformation.cpp include/SolveCorrespondenceAndRigidTransformation.h src/Registration.cpp include/Registration.h src/Evaluation.cpp include/Evaluation.h src/statistics.cpp include/statistics.h)
  
     target_link_libraries(${PROJECT_NAME} ${Open3D_LIBRARIES})
  

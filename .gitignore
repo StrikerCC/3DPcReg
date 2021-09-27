@@ -38,3 +38,4 @@ result/
 Make*/
 build/
 cmake-build-debug/
+snapshot/*.json

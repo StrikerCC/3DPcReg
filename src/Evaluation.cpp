@@ -6,7 +6,7 @@
 
 
 
-verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& source,
+statistics Evaluation::register_ransac_icp(const open3d::geometry::PointCloud& source,
                                                               const open3d::geometry::PointCloud& target,
                                                               const Eigen::Matrix4d& tf_gt) {
     // vis
@@ -22,7 +22,7 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
     std::vector<double> primary_voxel_size_global = Evaluation::voxel_size_global;
     std::vector<double> primary_voxel_size_local = Evaluation::voxel_size_local;
     SolveCorrespondenceAndRigidTransformation solver = SolveCorrespondenceAndRigidTransformation();
-    verification::statistic_reg statistic_reg_;
+    statistics statistic_reg_;
 
     /// get features ready
     std::cout << "Compute global feature" << std::endl;
@@ -46,7 +46,7 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
         double voxel_size = primary_voxel_size_global.at(i);
         auto src_pc = src_features_global.at(i).pc, tgt_pc = tgt_features_global.at(i).pc;
         auto src_feature = src_features_global.at(i).fpfh,  tgt_feature = tgt_features_global.at(i).fpfh;
-        verification::statistic statistic_;
+        statistics statistic_;
 
         auto global_result = solver.solve_ransac(src_pc, src_feature, tgt_pc, tgt_feature, voxel_size, tf_global);
         tf_global = global_result.transformation_;
@@ -58,7 +58,7 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
         statistic_.time = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
         statistic_.error_r = error.error_rotation;
         statistic_.error_t = error.error_translation;
-        statistic_reg_.statistics.push_back(statistic_);
+        statistic_reg_.substatistics.push_back(statistic_);
 
         // vis
         if (Evaluation::visualize) {
@@ -95,7 +95,7 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
         assert (primary_voxel_size_local.at(i) == tgt_features_local.at(i).voxel_size);
         double voxel_size = primary_voxel_size_local.at(i);
         auto src_pc = src_features_local.at(i).pc, tgt_pc = tgt_features_local.at(i).pc;
-        verification::statistic statistic_;
+        statistics statistic_;
 
         auto icp_result = solver.solve_icp(src_pc, tgt_pc, voxel_size, tf_local);
         tf_local = icp_result.transformation_;
@@ -112,7 +112,7 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
         statistic_.time = (float) (clock() - clock_start) / CLOCKS_PER_SEC;
         statistic_.error_r = error.error_rotation;
         statistic_.error_t = error.error_translation;
-        statistic_reg_.statistics.push_back(statistic_);
+        statistic_reg_.substatistics.push_back(statistic_);
 
         // vis
         if (Evaluation::visualize) {
@@ -148,81 +148,100 @@ verification::statistic_reg Evaluation::register_ransac_icp(const open3d::geomet
 //        std::cout << " Translation" << std::to_string(std::get<0>(error_rotation_translation)) << std::endl;
 //        std::cout << std::endl;
 //    }
-    statistic_reg_.time_total = time_features_global + time_reg_global + time_features_local + time_reg_local;
-    statistic_reg_.error_r_final = error.error_rotation;
-    statistic_reg_.error_t_final = error.error_translation;
-//    statistic_reg_.voxel_size_final = primary_voxel_size_local.at(primary_voxel_size_local.size()-1);
-    statistic_reg_.voxel_size_final = primary_voxel_size_local[-1];
+
+    statistic_reg_.method = "ransac_icp";
+//    statistic_reg_.src = ;
+    statistic_reg_.voxel_size = primary_voxel_size_local.at(primary_voxel_size_local.size()-1);
+    statistic_reg_.time = time_features_global + time_reg_global + time_features_local + time_reg_local;
+    statistic_reg_.error_r = error.error_rotation;
+    statistic_reg_.error_t = error.error_translation;
+
     return statistic_reg_;
 }
 
-bool Evaluation::recordError(verification::statistic_reg statistic_reg_) {
-    this->statistics.push_back(statistic_reg_);
+bool Evaluation::recordError(const statistics& statistic_reg_) {
+    this->statistics_eval.push_back(statistic_reg_);
     return true;
 }
 
-bool Evaluation::addAvgStddev() {
+bool Evaluation::addOrgAvgStddev() {
 
     // copy the map structure from statistic_reg, using the first statistic
-    verification::statistic_reg statistics_avg;
-    verification::statistic_reg statistics_stddev;
+    int num_success_case = 0;
+    statistics statistics_avg_org;
+    statistics statistics_avg_success_case;
+    statistics statistics_stddev_org;
+    statistics statistics_stddev_success_case;
 
     /// compute mean first
-    statistics_avg.src = "mean";
-    for (const auto& statistic : this->statistics) {
-        statistics_avg.time_total += statistic.time_total;
-        statistics_avg.error_r_final += statistic.error_r_final;
-        statistics_avg.error_t_final += statistic.error_t_final;
-        // add step statistic mean
-        for (int i = 0; i < statistic.statistics.size(); i++) {
-            if (statistics_avg.statistics.empty()) statistics_avg.statistics = std::vector<verification::statistic> (statistic.statistics.size());
-            statistics_avg.statistics[i].error_r += statistic.statistics[i].error_r;
-            statistics_avg.statistics[i].error_t += statistic.statistics[i].error_t;
-            statistics_avg.statistics[i].time += statistic.statistics[i].time;
-            statistics_avg.statistics[i].voxel_size += statistic.statistics[i].voxel_size;
+    statistics_avg_org.src = "mean";
+    for (const auto& statistic : this->statistics_eval) {
+        // take final error and time into account
+        statistics_avg_org.time += statistic.time;
+        statistics_avg_org.error_r += statistic.error_r;
+        statistics_avg_org.error_t += statistic.error_t;
+        // take error and time in each step into account
+        for (int i = 0; i < statistic.substatistics.size(); i++) {
+            if (statistics_avg_org.substatistics.empty()) {
+                statistics_avg_org.substatistics = std::vector<statistics> (statistic.substatistics.size());
+            }
+            statistics_avg_org.substatistics[i].error_r += statistic.substatistics[i].error_r;
+            statistics_avg_org.substatistics[i].error_t += statistic.substatistics[i].error_t;
+            statistics_avg_org.substatistics[i].time += statistic.substatistics[i].time;
+            statistics_avg_org.substatistics[i].voxel_size += statistic.substatistics[i].voxel_size;
+        }
+
+        // if error below threshold, take this case into success account
+        if (statistic.error_r <  error_r_threshold && statistic.error_t < error_t_threshold) {
+            num_success_case += 1;
+//            statistics_avg_success_case = statistics_avg_org;
         }
     }
-    statistics_avg.time_total /= (double) this->statistics.size();
-    statistics_avg.error_r_final /= (double) this->statistics.size();
-    statistics_avg.error_t_final /= (double) this->statistics.size();
-    for (int i = 0; i < this->statistics[0].statistics.size(); i++) {
-        statistics_avg.statistics[i].error_r /= (double) this->statistics.size();
-        statistics_avg.statistics[i].error_t /= (double) this->statistics.size();
-        statistics_avg.statistics[i].time /= (double) this->statistics.size();
-        statistics_avg.statistics[i].voxel_size /= (double) this->statistics.size();
-        statistics_avg.statistics[i].method = this->statistics[0].statistics[i].method;
+    statistics_avg_org.time /= (double) this->statistics_eval.size();
+    statistics_avg_org.error_r /= (double) this->statistics_eval.size();
+    statistics_avg_org.error_t /= (double) this->statistics_eval.size();
+    for (int i = 0; i < this->statistics_eval[0].substatistics.size(); i++) {
+        statistics_avg_org.substatistics[i].error_r /= (double) this->statistics_eval.size();
+        statistics_avg_org.substatistics[i].error_t /= (double) this->statistics_eval.size();
+        statistics_avg_org.substatistics[i].time /= (double) this->statistics_eval.size();
+        statistics_avg_org.substatistics[i].voxel_size /= (double) this->statistics_eval.size();
+        statistics_avg_org.substatistics[i].method = this->statistics_eval[0].substatistics[i].method;
     }
 
     // compute std dev then
-    statistics_stddev.src = "stddev";
-    for (const auto& statistic : this->statistics) {
-        statistics_stddev.time_total += pow(statistic.time_total-statistics_avg.time_total, 2);
-        statistics_stddev.error_r_final += pow(statistic.error_r_final-statistics_avg.error_r_final, 2);
-        statistics_stddev.error_t_final += pow(statistic.error_t_final-statistics_avg.error_t_final, 2);
+    statistics_stddev_org.src = "stddev";
+    for (const auto& statistic : this->statistics_eval) {
+        statistics_stddev_org.time += pow(statistic.time - statistics_avg_org.time, 2);
+        statistics_stddev_org.error_r += pow(statistic.error_r - statistics_avg_org.error_r, 2);
+        statistics_stddev_org.error_t += pow(statistic.error_t - statistics_avg_org.error_t, 2);
         // add step statistic stddev
-        for (int i = 0; i < statistic.statistics.size(); i++) {
-            if (statistics_stddev.statistics.empty()) statistics_stddev.statistics = std::vector<verification::statistic> (statistic.statistics.size());
-            statistics_stddev.statistics[i].error_r += pow(statistic.statistics[i].error_r-statistics_avg.statistics[i].error_r, 2);
-            statistics_stddev.statistics[i].error_t +=  pow(statistic.statistics[i].error_t-statistics_avg.statistics[i].error_t, 2);
-            statistics_stddev.statistics[i].time +=  pow(statistic.statistics[i].time-statistics_avg.statistics[i].time, 2);
-            statistics_stddev.statistics[i].voxel_size +=  pow(statistic.statistics[i].voxel_size-statistics_avg.statistics[i].voxel_size, 2);
+        for (int i = 0; i < statistic.substatistics.size(); i++) {
+            if (statistics_stddev_org.substatistics.empty()) statistics_stddev_org.substatistics = std::vector<statistics> (statistic.substatistics.size());
+            statistics_stddev_org.substatistics[i].error_r += pow(statistic.substatistics[i].error_r - statistics_avg_org.substatistics[i].error_r, 2);
+            statistics_stddev_org.substatistics[i].error_t +=  pow(statistic.substatistics[i].error_t - statistics_avg_org.substatistics[i].error_t, 2);
+            statistics_stddev_org.substatistics[i].time +=  pow(statistic.substatistics[i].time - statistics_avg_org.substatistics[i].time, 2);
+            statistics_stddev_org.substatistics[i].voxel_size +=  pow(statistic.substatistics[i].voxel_size - statistics_avg_org.substatistics[i].voxel_size, 2);
         }
     }
-    statistics_stddev.time_total = sqrt(statistics_stddev.time_total / (double) this->statistics.size());
-    statistics_stddev.error_r_final = sqrt(statistics_stddev.error_r_final / (double) this->statistics.size());
-    statistics_stddev.error_t_final = sqrt(statistics_stddev.error_t_final / (double) this->statistics.size());
-    for (int i = 0; i < this->statistics[0].statistics.size(); i++) {
-        statistics_stddev.statistics[i].error_r = sqrt(statistics_stddev.statistics[i].error_r / (double) this->statistics.size());
-        statistics_stddev.statistics[i].error_t = sqrt(statistics_stddev.statistics[i].error_t / (double) this->statistics.size());
-        statistics_stddev.statistics[i].time = sqrt(statistics_stddev.statistics[i].time / (double) this->statistics.size());
-        statistics_stddev.statistics[i].voxel_size = sqrt(statistics_stddev.statistics[i].voxel_size / (double) this->statistics.size());
-        statistics_stddev.statistics[i].method = this->statistics[0].statistics[i].method;
+    statistics_stddev_org.time = sqrt(statistics_stddev_org.time / (double) this->statistics_eval.size());
+    statistics_stddev_org.error_r = sqrt(statistics_stddev_org.error_r / (double) this->statistics_eval.size());
+    statistics_stddev_org.error_t = sqrt(statistics_stddev_org.error_t / (double) this->statistics_eval.size());
+    for (int i = 0; i < this->statistics_eval[0].substatistics.size(); i++) {
+        statistics_stddev_org.substatistics[i].error_r = sqrt(statistics_stddev_org.substatistics[i].error_r / (double) this->statistics_eval.size());
+        statistics_stddev_org.substatistics[i].error_t = sqrt(statistics_stddev_org.substatistics[i].error_t / (double) this->statistics_eval.size());
+        statistics_stddev_org.substatistics[i].time = sqrt(statistics_stddev_org.substatistics[i].time / (double) this->statistics_eval.size());
+        statistics_stddev_org.substatistics[i].voxel_size = sqrt(statistics_stddev_org.substatistics[i].voxel_size / (double) this->statistics_eval.size());
+        statistics_stddev_org.substatistics[i].method = this->statistics_eval[0].substatistics[i].method;
     }
 
     /// add avg and stddev to statistic_reg
-    this->statistics.push_back(statistics_avg);
-    this->statistics.push_back(statistics_stddev);
+    this->statistics_eval.push_back(statistics_avg_org);
+    this->statistics_eval.push_back(statistics_stddev_org);
     return true;
+}
+
+bool Evaluation::addSuccessCaseAvgStddev() {
+    return false;
 }
 
 bool Evaluation::save(const std::string& output_dir) {
@@ -230,6 +249,8 @@ bool Evaluation::save(const std::string& output_dir) {
     if (output_dir_.back() != '/') {
         output_dir_ += + "/";
     }
+
+    /// determine output json name
     std::string output_json_path;
     for (int i = 1; i < 1000; i++) {
         output_json_path = output_dir_;
@@ -244,14 +265,13 @@ bool Evaluation::save(const std::string& output_dir) {
     std::cout << "Saving to " << output_json_path << std::endl;
 
     // compute mean and std dev
-    this->addAvgStddev();
-
+    this->addOrgAvgStddev();
+    this->addSuccessCaseAvgStddev();
     /// write prettified JSON to output file
     // struct statistic to json
     std::vector<nlohmann::json> vector_json;
-    for (verification::statistic_reg statistic : this->statistics) {
-        nlohmann::json error_json(statistic);
-        vector_json.push_back(error_json);
+    for (statistics statistic : this->statistics_eval) {
+        vector_json.push_back(statistic.to_json());
     }
 
     nlohmann::json error_json(vector_json);

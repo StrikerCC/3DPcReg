@@ -20,7 +20,7 @@
 
 class Registration {
 public:
-    verification::statistic_reg register_ransac_icp(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
+    statistics register_ransac_icp(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
                                                     const Eigen::Matrix4d& tf_gt=Eigen::Matrix4d::Identity());
 
 
