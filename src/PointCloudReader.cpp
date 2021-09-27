@@ -102,20 +102,18 @@ PointCloudReaderFromJson::PointCloudReaderFromJson() = default;
 
 //PointCloudReaderFromJson::~PointCloudReaderFromJson() {}
 
-bool PointCloudReaderFromJson::loadJson(std::string file_path) {
+bool PointCloudReaderFromJson::loadJson(const std::string& root_path, const std::string& file_path) {
     std::ifstream input_file(file_path);
     input_file >> PointCloudReaderFromJson::sources;
 
     // load source, target, pose accordingly
     for (auto iter = PointCloudReaderFromJson::sources.cbegin(); iter < PointCloudReaderFromJson::sources.cend(); ++iter) {
-//        std::cout << *iter << std::endl;
-
         std::string src_path = std::string (iter->at("pc_artificial"));
 //        src_path = PointCloudReaderFromJson::root_path + src_path.substr(1);
-        src_path = PointCloudReaderFromJson::root_path + src_path;
+        src_path = root_path + src_path;
 
         std::string tgt_path = std::string (iter->at("pc_model"));
-        tgt_path = PointCloudReaderFromJson::root_path + tgt_path.substr(1);
+        tgt_path = root_path + tgt_path.substr(1);
 
         PointCloudReaderFromJson::frame_paths.push_back(src_path);
         PointCloudReaderFromJson::model_paths.push_back(tgt_path);

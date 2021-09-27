@@ -55,7 +55,8 @@ private:
 
 class PointCloudReaderFromJson: public PointCloudReader {
 public:
-    bool loadJson(std::string file_path);
+    bool loadJson(const std::string& root_path = "/home/cheng/proj/3d/TEASER-plusplus/",
+                  const std::string& file_path="/home/cheng/proj/3d/TEASER-plusplus/data/human_data/data.json");
 
     PointCloudReaderFromJson();
 
@@ -63,7 +64,7 @@ protected:
 
 
 private:
-    std::string root_path = "/home/cheng/proj/3d/TEASER-plusplus/";
+//    std::string root_path;
     nlohmann::json sources;
 };
 

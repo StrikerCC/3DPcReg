@@ -23,7 +23,7 @@ int main() {
     PointCloudReaderFromJson reader = PointCloudReaderFromJson();
 
     //    reader.loadJson("/home/cheng/proj/3d/3DPcReg/data/data.json");
-    reader.loadJson("/home/cheng/proj/3d/TEASER-plusplus/data/human_data/data.json");
+    reader.loadJson("/home/cheng/proj/3d/TEASER-plusplus/", "/home/cheng/proj/3d/TEASER-plusplus/data/human_data/data.json");
 
 
 //    for (int i = 0; i < reader.get_length(); ++i) {
