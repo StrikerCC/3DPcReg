@@ -21,7 +21,8 @@ int main() {
 
     Evaluation eval = Evaluation();
     PointCloudReaderFromJson reader = PointCloudReaderFromJson();
-    reader.loadJson("/home/cheng/proj/3d/3DPcReg/data/data.json");
+    // reader.loadJson("/home/cheng/proj/3d/3DPcReg/data/data.json");
+    reader.loadJson("/home/cheng_chen/proj/3d/3DPcReg/data/data.json");
 
     for (int i = 0; i < reader.get_length(); ++i) {
 //    for (int i = 0; i < 2; ++i) {
@@ -34,7 +35,8 @@ int main() {
         std::cout << "Time total                " <<  statistics_.time_total << std::endl;
     }
 
-    std::string output_dir = "/home/cheng/proj/3d/3DPcReg/snapshot/";
+    // std::string output_dir = "/home/cheng/proj/3d/3DPcReg/snapshot/";
+    std::string output_dir = "/home/cheng_chen/proj/3d/3DPcReg/snapshot/";
 
     eval.save(output_dir);
     return 0;
