@@ -103,6 +103,16 @@ PointCloudReaderFromJson::PointCloudReaderFromJson() = default;
 //PointCloudReaderFromJson::~PointCloudReaderFromJson() {}
 
 bool PointCloudReaderFromJson::loadDataFromRootDirAndJson(const std::string& root_path, const std::string& file_path) {
+    if (access(root_path.data(), 0) == -1) {
+        std::cout << "Root path (" << root_path << ") doesn't exist, aborting saving" << std::endl;
+        return false;
+    }
+    if (access(file_path.data(), 0) == -1) {
+        std::cout << "Json file path (" << file_path << ") doesn't exist, aborting saving" << std::endl;
+        return false;
+    }
+    
+
     std::ifstream input_file(file_path);
     input_file >> PointCloudReaderFromJson::sources;
 

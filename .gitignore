@@ -12,4 +12,4 @@
 data/
 Make*/
 cmake-build-debug/
-snapshot/*.json
+# snapshot/*.json

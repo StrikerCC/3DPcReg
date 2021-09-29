@@ -4,8 +4,8 @@ project(3DPCREG VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 14)
 
 
-#set(Open3D_DIR /home/cheng_chen/source/open3d13/install_server/lib/cmake/Open3D)
-set(Open3D_DIR /home/cheng/sources/open3d13/install_release/lib/cmake/Open3D)
+set(Open3D_DIR /home/cheng_chen/source/open3d13/install_server/lib/cmake/Open3D)
+# set(Open3D_DIR /home/cheng/sources/open3d13/install_release/lib/cmake/Open3D)
 
 # set(Open3D_DIR /home/cheng/sources/open3ds/install/)
 find_package(Open3D REQUIRED)

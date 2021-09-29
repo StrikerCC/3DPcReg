@@ -1,0 +1,148 @@
+[
+    {
+        "error_r": 131.48353595544526,
+        "error_t": 869.4635655388613,
+        "method": "ransac_icp",
+        "noise_src": 0.019999999552965164,
+        "num_points_src": 180,
+        "num_points_tgt": 1602346,
+        "src": "/home/cheng_chen/3d_projects/Teaser-plusplus-testing/./data/human_data_1152/000000.pcd",
+        "statistics_step": [
+            {
+                "error_r": 131.48353595544526,
+                "error_t": 869.4635655388613,
+                "method": "ransac",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 10310,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.013032288290560246,
+                "voxel_size": 4.0
+            },
+            {
+                "error_r": 131.48353595544526,
+                "error_t": 869.4635655388613,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 5308,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.018525278195738792,
+                "voxel_size": 5.0
+            },
+            {
+                "error_r": 131.48353595544526,
+                "error_t": 869.4635655388613,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 16819,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.03656389191746712,
+                "voxel_size": 3.0
+            },
+            {
+                "error_r": 131.48353595544526,
+                "error_t": 869.4635655388613,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 127510,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.12607939541339874,
+                "voxel_size": 1.0
+            },
+            {
+                "error_r": 131.48353595544526,
+                "error_t": 869.4635655388613,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 569262,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.5361918210983276,
+                "voxel_size": 0.4000000059604645
+            }
+        ],
+        "time": 3.2096097469329834,
+        "voxel_size": 0.10000000149011612
+    },
+    {
+        "error_r": 86.78196736834848,
+        "error_t": 1311.7013790846158,
+        "method": "ransac_icp",
+        "noise_src": 0.019999999552965164,
+        "num_points_src": 180,
+        "num_points_tgt": 1602346,
+        "src": "/home/cheng_chen/3d_projects/Teaser-plusplus-testing/./data/human_data_1152/000001.pcd",
+        "statistics_step": [
+            {
+                "error_r": 86.78196736834848,
+                "error_t": 1311.7013790846158,
+                "method": "ransac",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 9820,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.010561615228652954,
+                "voxel_size": 4.0
+            },
+            {
+                "error_r": 86.78196736834848,
+                "error_t": 1311.7013790846158,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 5185,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.015642354264855385,
+                "voxel_size": 5.0
+            },
+            {
+                "error_r": 86.78196736834848,
+                "error_t": 1311.7013790846158,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 15576,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.02394106797873974,
+                "voxel_size": 3.0
+            },
+            {
+                "error_r": 86.78196736834848,
+                "error_t": 1311.7013790846158,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 124056,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.09834031015634537,
+                "voxel_size": 1.0
+            },
+            {
+                "error_r": 86.78196736834848,
+                "error_t": 1311.7013790846158,
+                "method": "icp",
+                "noise_src": 0.0,
+                "num_points_src": 1,
+                "num_points_tgt": 564049,
+                "src": "",
+                "statistics_step": [],
+                "time": 0.4554949402809143,
+                "voxel_size": 0.4000000059604645
+            }
+        ],
+        "time": 2.513676166534424,
+        "voxel_size": 0.10000000149011612
+    }
+]

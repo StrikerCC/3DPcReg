@@ -4,14 +4,14 @@ import numpy as math
 import numpy as np
 import matplotlib.pyplot as plt
 
-statistics = {
-    'method': '',
-    'voxel_size': 0.0,
-    'time': 0.0,
-    'error_r': 0.0,
-    'error_t': 0.0,
-    'sub': [],
-}
+# statistics = {
+#     'method': '',
+#     'voxel_size': 0.0,
+#     'time': 0.0,
+#     'error_r': 0.0,
+#     'error_t': 0.0,
+#     'sub': [],
+# }
 
 
 # statistics_np = {
@@ -54,10 +54,19 @@ class statistics_np:
         ax1.hist(self.error_r, bins=bins, rwidth=0.9)
         ax2.hist(self.error_t, bins=bins, rwidth=0.9)
 
+        ax0_x_low, ax0_x_up = np.min(self.time), np.max(self.time)
+        ax1_x_low, ax1_x_up = np.min(self.error_r), np.max(self.error_r)
+        ax2_x_low, ax2_x_up = np.min(self.error_t), np.max(self.error_t)
+
+        ax0.set_xticks(np.arange(ax0_x_low, ax0_x_up, (ax0_x_up-ax0_x_low)/15))
         ax0.set_title('Time')
-        ax0.set_xlabel('second')
+        ax0.set_xlabel('seconds')
+
+        ax1.set_xticks(np.arange(ax1_x_low, ax1_x_up, (ax1_x_up-ax1_x_low)/15))
         ax1.set_title('Orientation error')
         ax1.set_xlabel('degree')
+
+        ax2.set_xticks(np.arange(ax2_x_low, ax2_x_up, (ax2_x_up-ax2_x_low)/15))
         ax2.set_title('Distance error')
         ax2.set_xlabel('mm')
 
@@ -72,11 +81,11 @@ class statistics_np:
 
 def main():
     r_upper_bound_success = 2
-    t_upper_bound_success = 0.2
+    t_upper_bound_success = 0.8
     r_upper_bound_fail = 8
     t_upper_bound_fail = 10
 
-    json_path = './00015.json'
+    json_path = './00004.json'
     num_success: int = 0
 
     success = statistics_np()
@@ -90,9 +99,9 @@ def main():
 
     '''average'''
     for reg_result in reg_results:
-        error_r = float(reg_result['error_r_final'])
-        error_t = float(reg_result['error_t_final'])
-        time = float(reg_result['time_total'])
+        error_r = float(reg_result['error_r'])
+        error_t = float(reg_result['error_t'])
+        time = float(reg_result['time'])
         if error_r < r_upper_bound_success and error_t < t_upper_bound_success:
             num_success += 1
             success.error_r.append(error_r)
