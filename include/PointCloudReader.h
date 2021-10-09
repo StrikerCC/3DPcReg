@@ -17,10 +17,9 @@
 
 struct sourceTargetAndPose {
 //    double voxel_sizes;
-    std::shared_ptr<open3d::geometry::PointCloud> src;
-    std::shared_ptr<open3d::geometry::PointCloud> tgt;
-    Eigen::Matrix4d pose;
-//    std::shared_ptr<Eigen::Matrix4d> pose;
+    std::shared_ptr<open3d::geometry::PointCloud> src;  // source point cloud
+    std::shared_ptr<open3d::geometry::PointCloud> tgt;  // target point cloud
+    Eigen::Matrix4d pose;                               // ground truth transformation from src to tgt, P_src = pose * P_tgt
 };
 
 class PointCloudReader {
@@ -34,7 +33,6 @@ public:
     sourceTargetAndPose getModelAndOneFrame(int index_frame);
 
     PointCloudReader();
-//    virtual ~PointCloudReader();
 
 protected:
     std::vector<std::string> model_paths;

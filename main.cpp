@@ -19,7 +19,6 @@ int main() {
     reader.loadDataFromRootDirAndJson("/home/cheng_chen/3d_projects/Teaser-plusplus-testing/", "/home/cheng_chen/3d_projects/Teaser-plusplus-testing/data/human_data_1152/data.json");
     // reader.loadDataFromRootDirAndJson("/home/cheng/proj/3d/TEASER-plusplus/", "/home/cheng_chen/3d_projects/Teaser-plusplus-testing/data/human_data_1152/data.json");
 
-
     for (int i = 0; i < reader.get_length(); ++i) {
     // for (int i = 0; i < 100; ++i) {
         sourceTargetAndPose pc_pair = reader.getModelAndOneFrame(i);    // read a pair of pc

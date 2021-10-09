@@ -1,4 +1,5 @@
 import copy
+import os
 import json
 import math
 import numpy as np
@@ -62,8 +63,11 @@ class Statistics:
         return stddev
 
     def plot(self):
-        fig, (ax0, ax1, ax2) = plt.subplots(nrows=3, figsize=(9, 6))
+        figure_name = self.data['method'] + ' successful rate: ' + str(round(self.data['ratio'], 4)) + '%, voxel size: ' + str(self.data['voxel_size']) + 'mm, noise sigma: ' + \
+                      str(self.data['noise_src']) + 'mm'
 
+        fig, (ax0, ax1, ax2) = plt.subplots(nrows=3, figsize=(9, 6))
+        fig.suptitle(figure_name)
         # build histogram
         bins = 512
         ax0.hist(self.data['time'], bins=bins, rwidth=0.9)
@@ -71,29 +75,36 @@ class Statistics:
         ax2.hist(self.data['error_t'], bins=bins, rwidth=0.9)
 
         # setup figure detail
-        ax0_x_low, ax0_x_up = np.min(self.data['time']), np.max(self.data['time'])
-        ax1_x_low, ax1_x_up = np.min(self.data['error_r']), np.max(self.data['error_r'])
-        ax2_x_low, ax2_x_up = np.min(self.data['error_t']), np.max(self.data['error_t'])
+        # ax0_x_low, ax0_x_up = np.min(self.data['time']), np.max(self.data['time'])
+        # ax1_x_low, ax1_x_up = np.min(self.data['error_r']), np.max(self.data['error_r'])
+        # ax2_x_low, ax2_x_up = np.min(self.data['error_t']), np.max(self.data['error_t'])
 
-        ax0.set_xticks(np.arange(ax0_x_low, ax0_x_up, (ax0_x_up - ax0_x_low) / 15))
+        ax0_x_low, ax0_x_up = 0, np.max(self.data['time'])
+        ax1_x_low, ax1_x_up = 0, np.max(self.data['error_r'])
+        ax2_x_low, ax2_x_up = 0, np.max(self.data['error_t'])
+
+        # ax0.set_xticks(np.arange(ax0_x_low, ax0_x_up, (ax0_x_up - ax0_x_low) / 20))
+        ax0.set_xticks(np.arange(ax0_x_low, ax0_x_up, 1))
         ax0.set_title('Time')
         ax0.set_xlabel('seconds')
 
-        ax1.set_xticks(np.arange(ax1_x_low, ax1_x_up, (ax1_x_up - ax1_x_low) / 15))
+        # ax1.set_xticks(np.arange(ax1_x_low, ax1_x_up, (ax1_x_up - ax1_x_low) / 20))
+        ax1.set_xticks(np.arange(ax1_x_low, ax1_x_up, 0.01))
         ax1.set_title('Orientation error')
         ax1.set_xlabel('degree')
 
-        ax2.set_xticks(np.arange(ax2_x_low, ax2_x_up, (ax2_x_up - ax2_x_low) / 15))
+        # ax2.set_xticks(np.arange(ax2_x_low, ax2_x_up, (ax2_x_up - ax2_x_low) / 20))
+        ax2.set_xticks(np.arange(ax2_x_low, ax2_x_up, 0.02))
         ax2.set_title('Distance error')
         ax2.set_xlabel('mm')
 
         fig.subplots_adjust(hspace=0.8)
-        plt.title(self.data['method'])
+        # plt.title()
 
         plt.show()
 
     def to_dict(self):
-        return self.data
+        return copy.deepcopy(self.data)
 
     def __len__(self):
         assert len(self.data['time']) == len(self.data['error_r']) == len(self.data['error_t'])
@@ -151,15 +162,30 @@ class Statistics:
 class StatisticsMultiDim:
     def __init__(self):
         self.statistics_ = {}
-        self.r_upper_bound_success = 2
-        self.t_upper_bound_success = 0.8
-        self.r_upper_bound_fail = 8
-        self.t_upper_bound_fail = 10
+        '''
+        "statistics": {
+            "voxel_size: 0.1": {
+                "noise_src: 0.02": {
+                    "ranks" : {reg_result}
+                }
+            }
+        }
+    
+        '''
+        self.r_upper_bounds = (2, 8)  # rotation error to rank reg result (smaller to bigger)
+        self.t_upper_bounds = (0.8, 10)  # translation error to rank reg result (smaller to bigger)
+        self.r_upper_bounds = (0.5,)  # rotation error to rank reg result (smaller to bigger)
+        self.t_upper_bounds = (0.8,)  # translation error to rank reg result (smaller to bigger)
+        self.json_path = ''
+        # self.r_upper_bound_fail = 8
+        # self.t_upper_bound_fail = 10
 
     def __len__(self):
         return 0
 
     def load_json(self, json_path='./00004.json'):
+        self.json_path = json_path
+
         with open(json_path) as f:
             reg_results = json.load(f)
         reg_results = reg_results[:-2]
@@ -167,74 +193,57 @@ class StatisticsMultiDim:
         '''average'''
         for reg_result in reg_results:
             # get key parameters
-            method = reg_result['method']
+            # method = reg_result['method']
             voxel_size = reg_result['voxel_size']
             noise_src = reg_result['noise_src']
-            num_points_src = reg_result['num_points_src']
-            num_points_tgt = reg_result['num_points_tgt']
-            time = float(reg_result['time'])
+            # num_points_src = int(reg_result['num_points_src'])
+            # num_points_tgt = int(reg_result['num_points_tgt'])
+            # time = float(reg_result['time'])
             error_r = float(reg_result['error_r'])
             error_t = float(reg_result['error_t'])
             reg_result_children = reg_result['statistics_step']
-            key = ''
+            key_rank = -1
 
             # format key parameters
             digits = 5
             voxel_size = round(voxel_size, digits)
             noise_src = round(noise_src, digits)
-            num_points_src = int(num_points_src)
-            num_points_tgt = int(num_points_tgt)
 
-            voxel_size = 'voxel_size: ' + str(voxel_size)
-            noise_src = 'noise_src: ' + str(noise_src)
+            for i_error_interval, (r_upper_bound, t_upper_bound) in enumerate(
+                    zip(self.r_upper_bounds, self.t_upper_bounds)):  # rank key the result according to error
+                if error_r < r_upper_bound and error_t < t_upper_bound:
+                    key_rank = i_error_interval
+                    break
+            if key_rank == -1:
+                key_rank = len(self.r_upper_bounds)
 
+            # build dict for different setting
             if voxel_size not in self.statistics_.keys():
                 self.statistics_[voxel_size] = {}
             if noise_src not in self.statistics_[voxel_size].keys():
-                self.statistics_[voxel_size][noise_src] = {'succ': Statistics(),
-                                                           'fail': Statistics(),
-                                                           'fail_total': Statistics()}
-            if error_r < self.r_upper_bound_success and error_t < self.t_upper_bound_success:
-                key = 'succ'
-            elif error_r < self.r_upper_bound_fail and error_t < self.t_upper_bound_fail:
-                key = 'fail'
-            else:
-                key = 'fail_total'
-            # self.statistics_[voxel_size][noise_src][key].method.append(method)
-            # self.statistics_[voxel_size][noise_src][key].voxel_size.append(voxel_size)
-            # self.statistics_[voxel_size][noise_src][key].noise_src.append(noise_src)
-            self.statistics_[voxel_size][noise_src][key].data['num_points_tgt'].append(num_points_tgt)
-            self.statistics_[voxel_size][noise_src][key].data['num_points_src'].append(num_points_src)
-            self.statistics_[voxel_size][noise_src][key].data['error_r'].append(error_r)
-            self.statistics_[voxel_size][noise_src][key].data['error_t'].append(error_t)
-            self.statistics_[voxel_size][noise_src][key].data['time'].append(time)
+                self.statistics_[voxel_size][noise_src] = {}
+            if key_rank not in self.statistics_[voxel_size][noise_src].keys():
+                self.statistics_[voxel_size][noise_src][key_rank] = []
 
+            '''copy data'''
+            self.statistics_[voxel_size][noise_src][key_rank].append(reg_result)
+
+        '''load data into statistics'''
         for key_voxel_size in self.statistics_.keys():
             for key_noise_src in self.statistics_[key_voxel_size].keys():
-                num = []
-                for key_cases, cases in self.statistics_[key_voxel_size][key_noise_src].items():
-                    num.append(len(cases.data['time']))
-                for i, (key_cases, cases) in enumerate(self.statistics_[key_voxel_size][key_noise_src].items()):
-                    cases.data['ratio'] = num[i] / sum(num)
+                # compute ration of each rank
+                num_cases = 0
+                for key_rank, reg_result in self.statistics_[key_voxel_size][key_noise_src].items():
+                    num_cases += len(reg_result)
+                if num_cases == 0: break
 
-
-
-
-            # if len(self.statistics_[voxel_size][noise_src][key].children) < len(reg_result_children):
-            #     self.statistics_[voxel_size][noise_src][key].children += reg_result_children
-            # else:
-            #     for reg_result_child, statistics_child in zip(reg_result_children, self.statistics_[voxel_size][noise_src][key].children):
-            #         statistics_child
-
-            # for i, reg_sub in enumerate(reg_result['statistics']):
-            #     if len(mean['sub']) < len(reg_result['statistics']):
-            #         mean['sub'].append(copy.deepcopy(statistics))
-            #     sub = mean['sub'][i]
-            #     sub['method'] = reg_sub['method']
-            #     sub['voxel_size'] = reg_sub['voxel_size']
-            #     sub['error_r'] += reg_sub['error_r']
-            #     sub['error_t'] += reg_sub['error_t']
-            #     sub['time'] += reg_sub['time']
+                # build statistic
+                for key_rank, result_rank in self.statistics_[key_voxel_size][key_noise_src].items():
+                    statistics_rank = Statistics()
+                    statistics_rank.load_dict(result_rank)
+                    statistics_rank.data['ratio'] = len(result_rank) / num_cases
+                    self.statistics_[key_voxel_size][key_noise_src][key_rank] = statistics_rank
+        ''''''
 
     def mean(self):
         statistics_multi_dim_mean = copy.deepcopy(self)
@@ -263,9 +272,8 @@ class StatisticsMultiDim:
                 dict_statistics[key] = dict_statistics[key].stddev()
 
     def to_dict(self):
-        self_dict = {'r_upper_bound_success': self.r_upper_bound_success,
-                     't_upper_bound_success': self.t_upper_bound_success, 'r_upper_bound_fail': self.r_upper_bound_fail,
-                     't_upper_bound_fail': self.t_upper_bound_fail,
+        self_dict = {'r_upper_bounds': self.r_upper_bounds,
+                     't_upper_bounds': self.t_upper_bounds,
                      'statistics': copy.deepcopy(self.statistics_)}
         self.__to_dict_helper(self_dict)
         return self_dict
@@ -280,19 +288,153 @@ class StatisticsMultiDim:
             else:
                 statistics_dict[key] = value.to_dict()
 
+    def plot(self):
+        fig_root = self.json_path[:-4] + 'vis/'
+        if not os.path.exists(fig_root):
+            os.mkdir(fig_root)
+
+        mean = self.mean()
+        std = self.stddev()
+
+        width = len(mean.statistics_[list(mean.statistics_.keys())[0]].keys())
+        height = len(mean.statistics_.keys())
+        # xs = [[0 for j in range(width)] for i in range(height)]
+        xs = np.zeros((height, width))
+        ys, ratio_0, time_0, mean_r_0, mean_t_0, std_r_0, std_t_0 = copy.deepcopy(xs), copy.deepcopy(xs), copy.deepcopy(xs), copy.deepcopy(xs), copy.deepcopy(xs), copy.deepcopy(xs), copy.deepcopy(xs)
+
+        for i, key_voxel_size in enumerate(mean.statistics_.keys()):
+            for j, key_noise_src in enumerate(mean.statistics_[key_voxel_size].keys()):
+                key_rank = 0
+                result_rank = mean.statistics_[key_voxel_size][key_noise_src][key_rank]
+                xs[i][j] = key_voxel_size
+                ys[i][j] = key_noise_src
+                ratio_0[i][j] = result_rank.data['ratio']
+                time_0[i][j] = result_rank.data['time']
+                mean_r_0[i][j] = result_rank.data['error_r']
+                mean_t_0[i][j] = result_rank.data['error_t']
+
+        fig = plt.figure()
+        ax3 = plt.axes(projection='3d')
+        # ax3.scatter3D(xs, ys, ratio_0, cmap='rank 0 ratio')
+        # ax3.plot_surface(xs, ys, ratio_0) #, cmap='rank 0 ratio')
+        ax3.plot_wireframe(xs, ys, ratio_0) #, label='Successful rate')
+        for x, y, z in zip(xs.flatten(), ys.flatten(), ratio_0.flatten()):
+            anno = round(z, 5)
+            ax3.text(x, y, z, anno, color='red')
+
+        ax3.set_xlabel('voxel size')
+        ax3.set_ylabel('noise sigma')
+        ax3.set_zlabel('percent')
+        plt.title('Successful rate')
+        ax3.legend()
+        plt.show()
+        fig.savefig(fig_root + 'SuccessfulRateVsVoxelSizAndNoiseSigma.png')
+
+        fig = plt.figure()
+        ax3 = plt.axes(projection='3d')
+        # ax3.scatter3D(xs, ys, ratio_0, cmap='rank 0 ratio')
+        # ax3.plot_surface(xs, ys, ratio_0) #, cmap='rank 0 ratio')
+        ax3.plot_wireframe(xs, ys, time_0) #, label='Successful rate')
+        for x, y, z in zip(xs.flatten(), ys.flatten(), time_0.flatten()):
+            anno = round(z, 5)
+            ax3.text(x, y, z, anno, color='red')
+        ax3.set_xlabel('voxel size')
+        ax3.set_ylabel('noise sigma')
+        ax3.set_zlabel('seconds')
+        plt.title('Average time ')
+        ax3.legend()
+        plt.show()
+        fig.savefig(fig_root + 'AverageTimeVsVoxelSizAndNoiseSigma.png')
+
+
+        fig = plt.figure()
+        ax3 = plt.axes(projection='3d')
+        ax3.plot_wireframe(xs, ys, mean_r_0) #, label='mean rotation error')
+        for x, y, z in zip(xs.flatten(), ys.flatten(), mean_r_0.flatten()):
+            anno = round(z, 5)
+            ax3.text(x, y, z, anno, color='red')
+        ax3.legend()
+        ax3.set_xlabel('voxel size')
+        ax3.set_ylabel('noise sigma')
+        ax3.set_zlabel('degree')
+        plt.title('Average rotation error')
+        plt.show()
+        fig.savefig(fig_root + 'AverageRotationErrorVsVoxelSizAndNoiseSigma.png')
+
+
+        fig = plt.figure()
+        ax3 = plt.axes(projection='3d')
+        ax3.plot_wireframe(xs, ys, mean_t_0) #, label='mean translation error')
+        for x, y, z in zip(xs.flatten(), ys.flatten(), mean_t_0.flatten()):
+            anno = round(z, 5)
+            ax3.text(x, y, z, anno, color='red')
+        ax3.legend()
+        ax3.set_xlabel('voxel size')
+        ax3.set_ylabel('noise sigma')
+        ax3.set_zlabel('mm')
+        plt.title('Average translation error')
+        plt.show()
+        fig.savefig(fig_root + 'AverageTranslationErrorVsVoxelSizAndNoiseSigma.png')
+
+        for i, key_voxel_size in enumerate(std.statistics_.keys()):
+            for j, key_noise_src in enumerate(std.statistics_[key_voxel_size].keys()):
+                key_rank = 0
+                result_rank = std.statistics_[key_voxel_size][key_noise_src][key_rank]
+
+                xs[i][j] = key_voxel_size
+                ys[i][j] = key_noise_src
+                ratio_0[i][j] = result_rank.data['ratio']
+                std_r_0[i][j] = result_rank.data['error_r']
+                std_t_0[i][j] = result_rank.data['error_t']
+
+        fig = plt.figure()
+        ax3 = plt.axes(projection='3d')
+        ax3.plot_wireframe(xs, ys, std_r_0) #, label='rotation error stddev')
+        for x, y, z in zip(xs.flatten(), ys.flatten(), std_r_0.flatten()):
+            anno = round(z, 5)
+            ax3.text(x, y, z, anno, color='red')
+        ax3.legend()
+        ax3.set_xlabel('voxel size')
+        ax3.set_ylabel('noise sigma')
+        ax3.set_zlabel('degree')
+        plt.title('Rotation error standard deviation')
+        plt.show()
+
+        fig = plt.figure()
+        ax3 = plt.axes(projection='3d')
+        ax3.plot_wireframe(xs, ys, std_t_0) #, label='translation error stddev')
+        for x, y, z in zip(xs.flatten(), ys.flatten(), std_t_0.flatten()):
+            anno = round(z, 5)
+            ax3.text(x, y, z, anno, color='red')
+        ax3.legend()
+        ax3.set_xlabel('voxel size')
+        ax3.set_ylabel('noise sigma')
+        ax3.set_zlabel('mm')
+        plt.title('Translation error standard deviation')
+        plt.show()
+
+    def plot_hist(self):
+        for i, key_voxel_size in enumerate(self.statistics_.keys()):
+            for j, key_noise_src in enumerate(self.statistics_[key_voxel_size].keys()):
+                key_rank = 0
+                result_rank = self.statistics_[key_voxel_size][key_noise_src][key_rank]
+
+                '''plot each 0 rank result statistics'''
+                result_rank.plot()
+
     # def __str__(self):
     #     return self.__str_helper(self.statistics_)
 
-    def __str_helper(self, statistics_dict, cout='', prefix=''):
-        prefix_next = '     '
-        for key, value in statistics_dict.items():
-            if not isinstance(value, Statistics):
-                cout += prefix + str(key) + '\n'
-                cout += self.__str_helper(value, cout, prefix + prefix_next)
-            else:
-                cout += prefix + str(key) + '\n'
-                cout += prefix + prefix_next + str(value) + '\n'
-        return cout
+    # def __str_helper(self, statistics_dict, cout='', prefix=''):
+    #     prefix_next = '     '
+    #     for key, value in statistics_dict.items():
+    #         if not isinstance(value, Statistics):
+    #             cout += prefix + str(key) + '\n'
+    #             cout += self.__str_helper(value, cout, prefix + prefix_next)
+    #         else:
+    #             cout += prefix + str(key) + '\n'
+    #             cout += prefix + prefix_next + str(value) + '\n'
+    #     return cout
 
 
 def main():
@@ -305,8 +447,12 @@ def main():
 
     statistics_mMulti_dim = StatisticsMultiDim()
     statistics_mMulti_dim.load_json()
+    # statistics_mMulti_dim.plot_hist()
+
     mean = statistics_mMulti_dim.mean()
     stddev = statistics_mMulti_dim.stddev()
+
+    statistics_mMulti_dim.plot()
 
     mean_dict = mean.to_dict()
     stddev_dict = stddev.to_dict()
