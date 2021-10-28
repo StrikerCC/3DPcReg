@@ -94,7 +94,7 @@ class Statistics:
         ax1.set_xlabel('degree')
 
         # ax2.set_xticks(np.arange(ax2_x_low, ax2_x_up, (ax2_x_up - ax2_x_low) / 20))
-        ax2.set_xticks(np.arange(ax2_x_low, ax2_x_up, 0.02))
+        ax2.set_xticks(np.arange(ax2_x_low, ax2_x_up, 0.04))
         ax2.set_title('Distance error')
         ax2.set_xlabel('mm')
 
@@ -102,6 +102,7 @@ class Statistics:
         # plt.title()
 
         plt.show()
+        return figure_name, fig
 
     def to_dict(self):
         return copy.deepcopy(self.data)
@@ -172,8 +173,8 @@ class StatisticsMultiDim:
         }
     
         '''
-        self.r_upper_bounds = (2, 8)  # rotation error to rank reg result (smaller to bigger)
-        self.t_upper_bounds = (0.8, 10)  # translation error to rank reg result (smaller to bigger)
+        # self.r_upper_bounds = (2, 8)  # rotation error to rank reg result (smaller to bigger)
+        # self.t_upper_bounds = (0.8, 10)  # translation error to rank reg result (smaller to bigger)
         self.r_upper_bounds = (0.5,)  # rotation error to rank reg result (smaller to bigger)
         self.t_upper_bounds = (0.8,)  # translation error to rank reg result (smaller to bigger)
         self.json_path = ''
@@ -312,7 +313,8 @@ class StatisticsMultiDim:
                 time_0[i][j] = result_rank.data['time']
                 mean_r_0[i][j] = result_rank.data['error_r']
                 mean_t_0[i][j] = result_rank.data['error_t']
-
+        x_label = 'voxel size/mm'
+        y_label = 'noise sigma/mm'
         fig = plt.figure()
         ax3 = plt.axes(projection='3d')
         # ax3.scatter3D(xs, ys, ratio_0, cmap='rank 0 ratio')
@@ -322,9 +324,9 @@ class StatisticsMultiDim:
             anno = round(z, 5)
             ax3.text(x, y, z, anno, color='red')
 
-        ax3.set_xlabel('voxel size')
-        ax3.set_ylabel('noise sigma')
-        ax3.set_zlabel('percent')
+        ax3.set_xlabel(x_label)
+        ax3.set_ylabel(y_label)
+        ax3.set_zlabel('successful rate/%')
         plt.title('Successful rate')
         ax3.legend()
         plt.show()
@@ -338,9 +340,9 @@ class StatisticsMultiDim:
         for x, y, z in zip(xs.flatten(), ys.flatten(), time_0.flatten()):
             anno = round(z, 5)
             ax3.text(x, y, z, anno, color='red')
-        ax3.set_xlabel('voxel size')
-        ax3.set_ylabel('noise sigma')
-        ax3.set_zlabel('seconds')
+        ax3.set_xlabel(x_label)
+        ax3.set_ylabel(y_label)
+        ax3.set_zlabel('average time/seconds')
         plt.title('Average time ')
         ax3.legend()
         plt.show()
@@ -354,9 +356,9 @@ class StatisticsMultiDim:
             anno = round(z, 5)
             ax3.text(x, y, z, anno, color='red')
         ax3.legend()
-        ax3.set_xlabel('voxel size')
-        ax3.set_ylabel('noise sigma')
-        ax3.set_zlabel('degree')
+        ax3.set_xlabel(x_label)
+        ax3.set_ylabel(y_label)
+        ax3.set_zlabel('error/degree')
         plt.title('Average rotation error')
         plt.show()
         fig.savefig(fig_root + 'AverageRotationErrorVsVoxelSizAndNoiseSigma.png')
@@ -414,13 +416,18 @@ class StatisticsMultiDim:
         plt.show()
 
     def plot_hist(self):
+        fig_root = self.json_path[:-4] + 'vis/'
+        if not os.path.exists(fig_root):
+            os.mkdir(fig_root)
+
         for i, key_voxel_size in enumerate(self.statistics_.keys()):
             for j, key_noise_src in enumerate(self.statistics_[key_voxel_size].keys()):
                 key_rank = 0
                 result_rank = self.statistics_[key_voxel_size][key_noise_src][key_rank]
 
                 '''plot each 0 rank result statistics'''
-                result_rank.plot()
+                fig_name, fig = result_rank.plot()
+                fig.savefig(fig_root + fig_name + '.png')
 
     # def __str__(self):
     #     return self.__str_helper(self.statistics_)
@@ -447,7 +454,7 @@ def main():
 
     statistics_mMulti_dim = StatisticsMultiDim()
     statistics_mMulti_dim.load_json()
-    # statistics_mMulti_dim.plot_hist()
+    statistics_mMulti_dim.plot_hist()
 
     mean = statistics_mMulti_dim.mean()
     stddev = statistics_mMulti_dim.stddev()

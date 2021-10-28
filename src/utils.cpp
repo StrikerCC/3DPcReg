@@ -46,3 +46,10 @@ bool DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry:
     open3d::visualization::DrawGeometries({source_transformed_ptr, target_ptr}, win_name);
     return true;
 }
+
+std::shared_ptr<open3d::geometry::PointCloud> FilterPointsOutBound(const open3d::geometry::PointCloud &pc,
+                                                                   const Eigen::Vector3d& min_bound,
+                                                                   const Eigen::Vector3d& max_bound) {
+    open3d::geometry::AxisAlignedBoundingBox bbox(min_bound, max_bound);
+    return pc.Crop(bbox);
+}

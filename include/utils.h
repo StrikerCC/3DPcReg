@@ -4,7 +4,6 @@
 
 #ifndef INC_3DPCREG_UTILS_H
 #define INC_3DPCREG_UTILS_H
-
 #pragma once
 #include <iostream>
 #include "Eigen/Eigen"
@@ -25,8 +24,11 @@ struct register_result {
 
 register_result ComputeRegError(const Eigen::Matrix4d &pose_1, const Eigen::Matrix4d &pose_2);
 
-
 bool DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
              const Eigen::Matrix4d &transformation=Eigen::Matrix4d::Identity(), const std::string &win_name="Registration");
+
+std::shared_ptr<open3d::geometry::PointCloud> FilterPointsOutBound(const open3d::geometry::PointCloud &pc,
+                                                                   const Eigen::Vector3d& min_bound = {0.0, 0.0, 0.0},
+                                                                   const Eigen::Vector3d& max_bound = {0.0, 0.0, 0.0});
 
 #endif //INC_3DPCREG_UTILS_H

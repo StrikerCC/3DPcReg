@@ -6,31 +6,54 @@
 #define INC_3DPCREG_REGISTRATION_H
 
 #include <cmath>
-#include <iostream>
-#include <fstream>
+//#include <iostream>
+//#include <fstream>
 #include <vector>
-#include <unordered_map>
+//#include <unordered_map>
 #include "nlohmann/json.hpp"
 #include "Eigen/Core"
 #include "open3d/Open3D.h"
 #include "open3d/geometry/PointCloud.h"
-# include "FeatureCompute.h"
-#include "SolveCorrespondenceAndRigidTransformation.h"
+#include "FeatureCompute.h"
+//#include "SolveCorrespondenceAndRigidTransformation.h"
 #include "utils.h"
+
+struct Registration_Statistics{
+    std::shared_ptr<open3d::pipelines::registration::RegistrationResult> reg_result;
+    nlohmann::json time;
+};
 
 class Registration {
 public:
-    statistics register_ransac_icp(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target,
-                                                    const Eigen::Matrix4d& tf_gt=Eigen::Matrix4d::Identity());
+//    void register_ransac_icp(const open3d::geometry::PointCloud &source, const open3d::geometry::PointCloud &target, double voxel_size,
+//                                                    const Eigen::Matrix4d& tf_gt=Eigen::Matrix4d::Identity());
 
 
     Registration();
 
+    Registration_Statistics register_ransac_icp(const std::shared_ptr<open3d::geometry::PointCloud> &pc_src,
+                             const std::shared_ptr<open3d::geometry::PointCloud> &pc_tgt);
+
 private:
     bool visualize = true;
-//    std::vector<double> voxel_size_global {6, 4};
-//    std::vector<double> voxel_size_local {5, 0.8};
-    std::vector<verification::statistic_reg> statistics;
+
+    std::vector<double> voxel_size_global {6};
+    std::vector<double> voxel_size_local {5, 3, 1, 0.5, 0.3, 0.1, 0.05};
+//    std::vector<verification::statistic_reg> statistics;
+
+
+    open3d::pipelines::registration::RegistrationResult ransac (
+            std::shared_ptr<open3d::geometry::PointCloud> const& src,
+            std::shared_ptr<open3d::pipelines::registration::Feature> const& src_feature,
+            std::shared_ptr<open3d::geometry::PointCloud> const& tgt,
+            std::shared_ptr<open3d::pipelines::registration::Feature> const& tgt_feature,
+            double voxel_size);
+
+    open3d::pipelines::registration::RegistrationResult icp(std::shared_ptr<open3d::geometry::PointCloud> const& src,
+                                                            std::shared_ptr<open3d::geometry::PointCloud> const& tgt,
+                                                            double voxel_size,
+                                                            const Eigen::Matrix4d& tf = Eigen::Matrix4d::Identity());
+
 };
 
 

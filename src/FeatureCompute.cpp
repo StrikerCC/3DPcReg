@@ -6,7 +6,7 @@
 
 FeatureCompute::FeatureCompute() = default;
 
-std::vector<PcNormalFpfh> FeatureCompute::getFPHFFeatures(const open3d::geometry::PointCloud &pc, const std::vector<float>& voxel_sizes) const {
+std::vector<PcNormalFpfh> FeatureCompute::getFPHFFeatures(const open3d::geometry::PointCloud &pc, const std::vector<double>& voxel_sizes) const {
     std::shared_ptr<open3d::geometry::PointCloud> pc_down = std::make_shared<open3d::geometry::PointCloud>(pc);
     std::vector<PcNormalFpfh> features = std::vector<PcNormalFpfh>();
 
@@ -34,7 +34,7 @@ std::vector<PcNormalFpfh> FeatureCompute::getFPHFFeatures(const open3d::geometry
     return features;
 }
 
-std::vector<PcNormal> FeatureCompute::getNormalFeature(const open3d::geometry::PointCloud &pc, const std::vector<float> &voxel_sizes) const {
+std::vector<PcNormal> FeatureCompute::getNormalFeature(const open3d::geometry::PointCloud &pc, const std::vector<double> &voxel_sizes) const {
     std::shared_ptr<open3d::geometry::PointCloud> pc_down = std::make_shared<open3d::geometry::PointCloud>(pc);
 
     std::vector<PcNormal> features;
