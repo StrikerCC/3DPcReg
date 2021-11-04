@@ -28,7 +28,11 @@ bool DrawReg(const open3d::geometry::PointCloud &source, const open3d::geometry:
              const Eigen::Matrix4d &transformation=Eigen::Matrix4d::Identity(), const std::string &win_name="Registration");
 
 std::shared_ptr<open3d::geometry::PointCloud> FilterPointsOutBound(const open3d::geometry::PointCloud &pc,
-                                                                   const Eigen::Vector3d& min_bound = {0.0, 0.0, 0.0},
-                                                                   const Eigen::Vector3d& max_bound = {0.0, 0.0, 0.0});
+                                                                   const Eigen::Vector3d& min_bound = {-5000.0, -5000.0, 200.0},
+                                                                   const Eigen::Vector3d& max_bound = {5000.0, 5000.0, 800.0});
+
+std::shared_ptr<open3d::geometry::LineSet> GetCorrespoundenceLines(const open3d::geometry::PointCloud &src,
+                                                                               const open3d::geometry::PointCloud &tgt,
+                                                                               const open3d::pipelines::registration::CorrespondenceSet &corr);
 
 #endif //INC_3DPCREG_UTILS_H

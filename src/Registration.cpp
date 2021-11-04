@@ -4,44 +4,50 @@
 
 #include <Registration.h>
 
-Registration_Statistics Registration::register_ransac_icp(const std::shared_ptr<open3d::geometry::PointCloud> &pc_src,
-                                                          const std::shared_ptr<open3d::geometry::PointCloud> &pc_tgt) {
-    auto source = *pc_src, target = *pc_tgt;
+Registration_Statistics Registration::register_ransac_icp(const std::shared_ptr<open3d::geometry::PointCloud> &pc_ptr_src,
+                                                          const std::shared_ptr<open3d::geometry::PointCloud> &pc_ptr_tgt) {
+    auto pc_src = *pc_ptr_src, pc_tgt = *pc_ptr_tgt;
 
     /// prepare registration parameters
     float time_global_features{0.0}, time_local_features{0.0}, time_global_reg{0.0}, time_local_reg{0.0};
 
-//    std::vector<float> primary_voxel_size_global = {};
-//    std::vector<float> primary_voxel_size_local = {};
     std::vector<double> primary_voxel_size_global = Registration::voxel_size_global;
     std::vector<double> primary_voxel_size_local = Registration::voxel_size_local;
 
-//    Eigen::Matrix4d tf_global = Eigen::Matrix4d::Identity();
-    open3d::pipelines::registration::RegistrationResult reg_result;
-
+    open3d::pipelines::registration::RegistrationResult ransac_reg_result;
+    open3d::pipelines::registration::RegistrationResult icp_reg_result;
 
     /// get global parameters and features ready
     std::chrono::steady_clock::time_point clock_global_feature_start = std::chrono::steady_clock::now();
     std::cout << "Compute global feature" << std::endl;
     FeatureCompute features = FeatureCompute();
-    std::vector<PcNormalFpfh> src_features_global = features.getFPHFFeatures(source, primary_voxel_size_global);
-    std::vector<PcNormalFpfh> tgt_features_global = features.getFPHFFeatures(target, primary_voxel_size_global);
-    time_global_features = (float) (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - clock_global_feature_start).count());
+    std::vector<PcNormalFpfh> features_global_src = features.getFPHFFeatures(pc_src, primary_voxel_size_global);
+    std::vector<PcNormalFpfh> features_global_tgt = features.getFPHFFeatures(pc_tgt, primary_voxel_size_global);
+    time_global_features = (float) (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - clock_global_feature_start).count());
 
     /// start global register
     std::cout << "Global Reg" << std::endl;
-
     std::chrono::steady_clock::time_point clock_global_reg_start = std::chrono::steady_clock::now();
     for (int i = 0; i < primary_voxel_size_global.size(); ++i) {
         double voxel_size = primary_voxel_size_global.at(i);
-        auto src_pc = src_features_global.at(i).pc, tgt_pc = tgt_features_global.at(i).pc;
-        auto src_feature = src_features_global.at(i).fpfh, tgt_feature = tgt_features_global.at(i).fpfh;
+        auto pc_src_down = features_global_src.at(i).pc, pc_tgt_down = features_global_tgt.at(i).pc;
+        auto feat_src = features_global_src.at(i).fpfh, feat_tgt = features_global_tgt.at(i).fpfh;
 
-        reg_result = ransac(src_pc, src_feature, tgt_pc, tgt_feature, voxel_size);
+        ransac_reg_result = ransac(pc_src_down, feat_src, pc_tgt_down, feat_tgt, voxel_size);
+
         std::cout << "ransac " << voxel_size << std::endl;
-        std::cout << "fitness " << reg_result.fitness_ << std::endl;
-        std::cout << "inlier rmse " << reg_result.inlier_rmse_ << std::endl;
-        DrawReg(*src_pc, *tgt_pc, reg_result.transformation_, "ransac" + std::to_string(voxel_size).substr(3));
+        std::cout << "fitness " << ransac_reg_result.fitness_ << std::endl;
+        std::cout << "inlier rmse " << ransac_reg_result.inlier_rmse_ << std::endl;
+
+        auto corr_lines = GetCorrespoundenceLines(*pc_src_down, *pc_tgt_down, ransac_reg_result.correspondence_set_);
+        corr_lines->PaintUniformColor(Eigen::Vector3d({1.0, 0.0, 0.0}));
+        open3d::visualization::DrawGeometries({pc_src_down, pc_tgt_down, corr_lines});
+
+//        open3d::visualization::Visualizer vis;
+//        std::shared_ptr<open3d::geometry::LineSet> lines;
+//        vis.AddGeometry(lines);
+//        vis.AddGeometry(pc_ptr_src);
+//        vis.AddGeometry(pc_ptr_tgt);
 
         // overload old pose if this reg may valid
 //    if (Registration_mix::IsRegValid(registration_result.transformation_)) {
@@ -52,45 +58,46 @@ Registration_Statistics Registration::register_ransac_icp(const std::shared_ptr<
 //        return false;
 //    }
     }
-    time_global_reg = (float) (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - clock_global_reg_start).count());
+    time_global_reg = (float) (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - clock_global_reg_start).count());
 
     /// get local features ready
     std::cout << "Compute local feature" << std::endl;
     std::chrono::steady_clock::time_point clock_local_feature_start = std::chrono::steady_clock::now();
 
-    std::vector<PcNormal> src_features_local = features.getNormalFeature(source, primary_voxel_size_local);
-    std::vector<PcNormal> tgt_features_local = features.getNormalFeature(target, primary_voxel_size_local);
+    std::vector<PcNormal> src_features_local = features.getNormalFeature(pc_src, primary_voxel_size_local);
+    std::vector<PcNormal> tgt_features_local = features.getNormalFeature(pc_tgt, primary_voxel_size_local);
 
-    time_local_features = (float) (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - clock_local_feature_start).count());
+    time_local_features = (float) (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - clock_local_feature_start).count());
 
     /// start local reg
     std::cout << "Local Reg" << std::endl;
+    icp_reg_result = ransac_reg_result;     // overwrite icp result for first icp reg
     std::chrono::steady_clock::time_point clock_local_reg_start = std::chrono::steady_clock::now();
 
     for (int i = 0; i < primary_voxel_size_local.size(); ++i) {
-//            std::chrono::steady_clock::time_point t_l_r_iter = std::chrono::steady_clock::now();
-
         assert (primary_voxel_size_local.at(i) == src_features_local.at(i).voxel_size);
         assert (primary_voxel_size_local.at(i) == tgt_features_local.at(i).voxel_size);
 
         double voxel_size = primary_voxel_size_local.at(i);
-        auto src_pc = src_features_local.at(i).pc, tgt_pc = tgt_features_local.at(i).pc;
+        auto pc_src_down = src_features_local.at(i).pc, pc_tgt_down = tgt_features_local.at(i).pc;
 
-        reg_result = icp(src_pc, tgt_pc, voxel_size, reg_result.transformation_);
+        icp_reg_result = icp(pc_src_down, pc_tgt_down, voxel_size, icp_reg_result.transformation_);
+
         std::cout << i << " icp , voxel size: " << voxel_size << std::endl;
-        std::cout << "fitness " << reg_result.fitness_ << std::endl;
-        std::cout << "inlier rmse " << reg_result.inlier_rmse_ << std::endl;
-//        DrawReg(*src_pc, *tgt_pc, reg_result.transformation_, "icp" + std::to_string(voxel_size));
+        std::cout << "fitness " << icp_reg_result.fitness_ << std::endl;
+        std::cout << "inlier rmse " << icp_reg_result.inlier_rmse_ << std::endl;
+//        DrawReg(*pc_src_down, *pc_tgt_down, icp_reg_result.transformation_, "icp" + std::to_string(voxel_size));
 
 //        std::cout << "ICP iteration " << i << " voxel size " << voxel_size << ", reg in " << " seconds" << std::endl;
-//        std::cout << "      Source has " << src_pc->points_.size() << " points" << std::endl;
-//        std::cout << "      Target has " << tgt_pc->points_.size() << " points" << std::endl;
+//        std::cout << "      Source has " << pc_src_down->points_.size() << " points" << std::endl;
+//        std::cout << "      Target has " << pc_tgt_down->points_.size() << " points" << std::endl;
     }
-    time_local_reg = (float) (std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - clock_local_reg_start).count());
+    time_local_reg = (float) (std::chrono::duration_cast<std::chrono::seconds>(std::chrono::steady_clock::now() - clock_local_reg_start).count());
 
-    double digits_round = 1000000.0;
+    double digits_round = 1000.0;
     Registration_Statistics reg_statistic = {
-            std::make_shared<open3d::pipelines::registration::RegistrationResult>(reg_result),
+            std::make_shared<open3d::pipelines::registration::RegistrationResult>(ransac_reg_result),
+            std::make_shared<open3d::pipelines::registration::RegistrationResult>(icp_reg_result),
                     nlohmann::json ({
                         {"time_global_features", round(time_global_features*digits_round)/ digits_round},
                         {"time_local_features", round(time_local_features*digits_round)/ digits_round},
@@ -110,7 +117,8 @@ open3d::pipelines::registration::RegistrationResult Registration::ransac(
 
     int max_iteration = 10000000;
     float confidence = 0.999;
-    double max_correspondence_dis = voxel_size * 0.5, distance_threshold = voxel_size;
+//    double max_correspondence_dis = voxel_size * 0.5;
+    double max_correspondence_dis = 2.0;
 
     auto source = *src, target = *tgt;
     auto source_feature = *src_feature, target_feature = *tgt_feature;
@@ -118,9 +126,12 @@ open3d::pipelines::registration::RegistrationResult Registration::ransac(
     std::vector<std::reference_wrapper<const open3d::pipelines::registration::CorrespondenceChecker>> correspondence_checker;
     auto correspondence_checker_dege_length = open3d::pipelines::registration::CorrespondenceCheckerBasedOnEdgeLength(
             0.9);
+//            0.9);
+    double distance_threshold = voxel_size * 0.5;
     auto correspondence_checker_distance = open3d::pipelines::registration::CorrespondenceCheckerBasedOnDistance(distance_threshold);
     auto correspondence_checker_normal = open3d::pipelines::registration::CorrespondenceCheckerBasedOnNormal(
             0.52359878);
+//            0.52359878);
     correspondence_checker.emplace_back(correspondence_checker_dege_length);
     correspondence_checker.emplace_back(correspondence_checker_distance);
     correspondence_checker.emplace_back(correspondence_checker_normal);
@@ -145,12 +156,13 @@ open3d::pipelines::registration::RegistrationResult Registration::ransac(
                                                                                                          true,
                                                                                                          max_correspondence_dis,
                                                                                                          open3d::pipelines::registration::TransformationEstimationPointToPoint(
-                                                                                                                 false));
+                                                                                                                 false) );
 //                                                                                                         3,
-//                                                                                                         correspondence_checker,
+//                                                                                                         correspondence_checker);
 //                                                                                                         open3d::pipelines::registration::RANSACConvergenceCriteria(
 //                                                                                                                 max_iteration,
 //                                                                                                                 confidence));
+
     return registration_result;
 }
 

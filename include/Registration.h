@@ -19,7 +19,8 @@
 #include "utils.h"
 
 struct Registration_Statistics{
-    std::shared_ptr<open3d::pipelines::registration::RegistrationResult> reg_result;
+    std::shared_ptr<open3d::pipelines::registration::RegistrationResult> global_reg_result;
+    std::shared_ptr<open3d::pipelines::registration::RegistrationResult> local_reg_result;
     nlohmann::json time;
 };
 
@@ -31,14 +32,14 @@ public:
 
     Registration();
 
-    Registration_Statistics register_ransac_icp(const std::shared_ptr<open3d::geometry::PointCloud> &pc_src,
-                             const std::shared_ptr<open3d::geometry::PointCloud> &pc_tgt);
+    Registration_Statistics register_ransac_icp(const std::shared_ptr<open3d::geometry::PointCloud> &pc_ptr_src,
+                             const std::shared_ptr<open3d::geometry::PointCloud> &pc_ptr_tgt);
 
 private:
     bool visualize = true;
 
-    std::vector<double> voxel_size_global {6};
-    std::vector<double> voxel_size_local {5, 3, 1, 0.5, 0.3, 0.1, 0.05};
+    std::vector<double> voxel_size_global {8};
+    std::vector<double> voxel_size_local {5, 3, 1, 0.5};
 //    std::vector<verification::statistic_reg> statistics;
 
 

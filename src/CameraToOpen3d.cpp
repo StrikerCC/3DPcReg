@@ -123,7 +123,6 @@ std::shared_ptr<open3d::geometry::PointCloud> CameraToOpen3d::GetNewFrame() {
 
 int CameraToOpen3d::SaveNewFrame(const std::string& file_path) const {
     if (!CameraToOpen3d::WorkingProperly()) return 0;
-//    std::remove(file_path.data());
 
     /// save a frame
     bool success = false;
@@ -160,9 +159,7 @@ int CameraToOpen3d::SaveNewFrame(const std::string& file_path) const {
         pc.generatePoints((unsigned short *)frameDepth->getData(), frameDepth->getWidth(), frameDepth->getHeight(), scale, &intr, nullptr, nullptr);
         pc.exportToFile(file_path, nullptr, 0, 0, true);
         success = true;
-//        return 1;
     }
-//    std::cout << "Not Frame Receive After " << count << " iteration" << std::endl;
     return success;
 }
 

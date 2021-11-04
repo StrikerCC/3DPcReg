@@ -50,13 +50,21 @@ int demo() {
         auto result = reg.register_ransac_icp(pc_src, pc_tgt);
 
         /// cout
-        auto tf = result.reg_result->transformation_;
-        std::cout << "  fitness: " << result.reg_result->fitness_ << ", inlier rmse " << result.reg_result->inlier_rmse_ << std::endl;
+        auto ransac_reg_result = result.global_reg_result;
+        auto icp_reg_result = result.local_reg_result;
+        DrawReg(*pc_src, *pc_tgt, ransac_reg_result->transformation_, "ransac");
+
+        std::cout << "Final " << std::endl;
+        std::cout << "  fitness: " << icp_reg_result->fitness_ << ", inlier rmse " << icp_reg_result->inlier_rmse_ << std::endl;
         std::cout << "  time each : " << result.time << std::endl;
         std::cout << "  time total:" << (double) result.time["time_global_features"] + (double) result.time["time_local_features"] + (double) result.time["time_global_reg"] + (double) result.time["time_local_reg"] << std::endl;
         std::cout << std::endl;
 
         /// visual
+        std::cout << ransac_reg_result->correspondence_set_.size() << std::endl;
+        DrawReg(*pc_src, *pc_tgt, ransac_reg_result->transformation_, "Ransac");
+        DrawReg(*pc_src, *pc_tgt, icp_reg_result->transformation_, "ICP Final");
+
 //        std::shared_ptr<open3d::geometry::PointCloud> source_transformed_ptr(new open3d::geometry::PointCloud);
 //        std::shared_ptr<open3d::geometry::PointCloud> target_ptr(new open3d::geometry::PointCloud);
 
@@ -71,9 +79,7 @@ int demo() {
 //        vis.UpdateGeometry(source_transformed_ptr);
 //        vis.PollEvents();
 //        vis.UpdateRender();
-        DrawReg(*pc_src, *pc_tgt, tf);
 //        DrawReg(*pc_src, *pc_tgt);
-
     }
 //    vis.DestroyVisualizerWindow();
     return 0;
@@ -81,12 +87,12 @@ int demo() {
 
 
 int compare() {
-    std::string file_src_path = "../data/3D_model_man_face.pcd";
-    std::string file_tgt_path = "../data/";
+//    std::string file_src_path = "../data/3D_mode_manl_face.pcd";
+    std::string file_src_path = "../data/3D_model_face_from_mr.pcd";
+    std::string file_tgt_path = "./pc_temp.ply";
 
     double voxel_size_down = 0.5;
 
-//    CameraToOpen3d cam = CameraToOpen3d();
     Registration reg = Registration();
 
     /// read source point cloud
@@ -95,57 +101,62 @@ int compare() {
     std::shared_ptr<open3d::geometry::PointCloud> pc_src = pc_src_original.VoxelDownSample(voxel_size_down);
 
     /// target point cloud parameters
-    Eigen::Vector3d min_bound_pc_tgt = {-300.0, 300.0, 0.0};
-    Eigen::Vector3d max_bound_pc_tgt = {300.0, 300.0, 2000.0};
+
 
     /// vis ready
-    open3d::visualization::Visualizer vis;
+//    open3d::visualization::Visualizer vis;
 //    vis.CreateVisualizerWindow();
-    std::shared_ptr<open3d::geometry::PointCloud> source_transformed_ptr = nullptr;
-    source_transformed_ptr = pc_src;
-    std::shared_ptr<open3d::geometry::PointCloud> target_ptr= nullptr;
-    target_ptr = pc_src;
+//    const std::shared_ptr<open3d::geometry::PointCloud> source_transformed_ptr = std::make_shared<open3d::geometry::PointCloud>(*pc_src);
+//    const std::shared_ptr<open3d::geometry::PointCloud> target_ptr= std::make_shared<open3d::geometry::PointCloud>(*pc_src);;
 //    vis.AddGeometry(source_transformed_ptr);
 //    vis.AddGeometry(target_ptr);
 //    vis.Run();
 
     /// reg iteration
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 7; i++) {
+
         /// read target point cloud from CameraToOpen3d
-        open3d::geometry::PointCloud pc_tgt_original = open3d::geometry::PointCloud();
-        open3d::io::ReadPointCloud(file_tgt_path, pc_tgt_original);
 //        auto pc_tgt_original = cam.GetNewFrame();
-        std::shared_ptr<open3d::geometry::PointCloud> pc_tgt = FilterPointsOutBound(pc_tgt_original, min_bound_pc_tgt, max_bound_pc_tgt);
-        pc_tgt->VoxelDownSample(voxel_size_down);
+        open3d::geometry::PointCloud pc_tgt_original;
+        open3d::io::ReadPointCloud(file_tgt_path, pc_tgt_original);
+        auto pc_tgt = FilterPointsOutBound(pc_tgt_original);
+        pc_tgt = pc_tgt->VoxelDownSample(voxel_size_down);
 
         /// reg
+        open3d::utility::SetVerbosityLevel(open3d::utility::VerbosityLevel::Debug);
         auto result = reg.register_ransac_icp(pc_src, pc_tgt);
 
         /// cout
-        auto tf = result.reg_result->transformation_;
-        std::cout << "  fitness: " << result.reg_result->fitness_ << ", inlier rmse " << result.reg_result->inlier_rmse_ << std::endl;
-        std::cout << "  time: " << result.time << std::endl;
+        auto ransac_reg_result = result.global_reg_result;
+        auto icp_reg_result = result.local_reg_result;
+
+        std::cout << "Final " << std::endl;
+        std::cout << "  fitness: " << icp_reg_result->fitness_ << ", inlier rmse " << icp_reg_result->inlier_rmse_ << std::endl;
+        std::cout << "  time each : " << result.time << std::endl;
+        std::cout << "  time total:" << (double) result.time["time_global_features"] + (double) result.time["time_local_features"] + (double) result.time["time_global_reg"] + (double) result.time["time_local_reg"] << std::endl;
         std::cout << std::endl;
 
         /// visual
+        DrawReg(*pc_src, *pc_tgt, ransac_reg_result->transformation_, "Ransac");
+        DrawReg(*pc_src, *pc_tgt, icp_reg_result->transformation_, "ICP Final");
 //        std::shared_ptr<open3d::geometry::PointCloud> source_transformed_ptr(new open3d::geometry::PointCloud);
 //        std::shared_ptr<open3d::geometry::PointCloud> target_ptr(new open3d::geometry::PointCloud);
 
-        *source_transformed_ptr = *pc_src;
-        source_transformed_ptr->Transform(tf);
-        source_transformed_ptr->PaintUniformColor({0.0, 0.0, 1.0});
-
-        target_ptr = pc_tgt;
-        target_ptr->PaintUniformColor({0.0, 1.0, 0.0});
+//        *source_transformed_ptr = *pc_src;
+//        source_transformed_ptr->Transform(tf);
+//        source_transformed_ptr->PaintUniformColor({0.0, 0.0, 1.0});
+//
+//        *target_ptr = *pc_tgt;
+//        target_ptr->PaintUniformColor({0.0, 1.0, 0.0});
 
 //        vis.UpdateGeometry(target_ptr);
 //        vis.UpdateGeometry(source_transformed_ptr);
 //        vis.PollEvents();
 //        vis.UpdateRender();
-        DrawReg(*pc_src, *pc_tgt, tf);
+//        DrawReg(*pc_src, *pc_tgt);
 
     }
-    vis.DestroyVisualizerWindow();
+//    vis.DestroyVisualizerWindow();
     return 0;
 }
 
@@ -202,8 +213,8 @@ int ThreadTest_() {
 
 
 int main() {
-//    compare();
-    demo();
+    compare();
+//    demo();
 //    ThreadTest_();
     return 1;
 }

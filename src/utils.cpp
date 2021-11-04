@@ -53,3 +53,27 @@ std::shared_ptr<open3d::geometry::PointCloud> FilterPointsOutBound(const open3d:
     open3d::geometry::AxisAlignedBoundingBox bbox(min_bound, max_bound);
     return pc.Crop(bbox);
 }
+
+std::shared_ptr<open3d::geometry::LineSet> GetCorrespoundenceLines(const open3d::geometry::PointCloud &src, const open3d::geometry::PointCloud &tgt, const open3d::pipelines::registration::CorrespondenceSet &corr) {
+    std::vector<std::shared_ptr<open3d::geometry::LineSet>> line_set;
+    std::vector<Eigen::Vector3d> points;
+    std::vector<Eigen::Vector2i> lines;
+    for (int i = 0; i < corr.size(); i++) {
+        auto c = corr.at(i);
+        Eigen::Vector3d p0 = src.points_[c[0]];
+        Eigen::Vector3d p1 = tgt.points_[c[1]];
+        Eigen::Vector2i line = {2*i, 2*i+1};
+        points.push_back(p0);
+        points.push_back(p1);
+        lines.push_back(line);
+    }
+    return std::make_shared<open3d::geometry::LineSet>(open3d::geometry::LineSet(points, lines));
+
+//    std::vector<int, int> corr_;
+//    for (int i = 0; i < corr.size(); i++) {
+//        auto c = corr.at(i);
+//        Eigen::Vector2i line = {2*i, 2*i+1};
+//        corr
+//    }
+//    return open3d::geometry::LineSet::CreateFromPointCloudCorrespondences(src, tgt, );
+}
