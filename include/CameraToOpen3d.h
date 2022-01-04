@@ -20,7 +20,7 @@ public:
     ERROR_CODE SetExposure(float exposure);
 //    ERROR_CODE SetGain(float gain_);
 
-    std::shared_ptr<open3d::geometry::PointCloud> GetNewFrame();
+    std::shared_ptr<open3d::geometry::PointCloud> GetNewFrame(const std::string& file_path_temp="") const;
     int SaveNewFrame(const std::string& file_path) const;
 
     bool WorkingProperly() const {return working_normal_;};
@@ -32,8 +32,8 @@ private:
     bool working_normal_ = false;
 
     int depthRange_min_ = 100;        // PROPERTY_EXT_DEPTH_RANGE
-    int depthRange_max_ = 1000;
-    int algorithm_contrast_ = 10;     // the threshold of algorithm
+    int depthRange_max_ = 800;
+    int algorithm_contrast_ = 1;     // the threshold of algorithm
 
     float exposure_ = 3998;          // exposure_ time (micro second)
     float gain_ = 1;                 // sensor gain_ (intensity of inferred laser ?)

@@ -106,13 +106,13 @@ CameraToOpen3d::~CameraToOpen3d() {
     }
 }
 
-std::shared_ptr<open3d::geometry::PointCloud> CameraToOpen3d::GetNewFrame() {
+std::shared_ptr<open3d::geometry::PointCloud> CameraToOpen3d::GetNewFrame(const std::string& file_path_temp) const{
     assert(CameraToOpen3d::WorkingProperly());
-
-    std::string file_path_temp = "./pc_temp.ply";
+    assert(file_path_temp.substr(-4, 4) == ".ply");
+    std::string file_path_temp_ = file_path_temp.empty() ? "./pc_temp.ply" : file_path_temp;
     open3d::geometry::PointCloud pc = open3d::geometry::PointCloud();
-    if (CameraToOpen3d::SaveNewFrame(file_path_temp) == 1) {
-        open3d::io::ReadPointCloud(file_path_temp, pc);
+    if (CameraToOpen3d::SaveNewFrame(file_path_temp_) == 1) {
+        open3d::io::ReadPointCloud(file_path_temp_, pc);
     } else {
         std::cout << "Couldn't get new frame" << std::endl;
     }

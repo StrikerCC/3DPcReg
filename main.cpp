@@ -6,10 +6,12 @@
 #include "CameraToOpen3d.h"
 #include "Registration.h"
 #include "utils.h"
-//#include "Registration_mix.h"
 //#include "Evaluation.h"
 //#include "statistics.h"
 #include <thread>
+#include <pybind11/pybind11.h>
+
+namespace py = pybind11;
 
 int demo() {
 //    std::string file_src_path = "../data/3D_mode_manl_face.pcd";
@@ -211,10 +213,30 @@ int ThreadTest_() {
     return 1;
 }
 
+bool SaveAFrame() {
+    std::string pc_file_path = "./pc_shut.ply";
+    CameraToOpen3d cam = CameraToOpen3d();
+    if (not cam.WorkingProperly()) return false;
+    for (int i = 0; i < 5; i++) {
+        if (not cam.WorkingProperly()) return false;
+        /// read target point cloud from CameraToOpen3d
+        cam.SaveNewFrame(pc_file_path);
+    }
+    return true;
+}
+
+void hello() {
+    std::cout << "Hello Camera" << std::endl;
+}
 
 int main() {
-    compare();
-//    demo();
+//    compare();
+    demo();
 //    ThreadTest_();
     return 1;
+}
+
+PYBIND11_MODULE(camera, m) {
+    m.def("shut", &SaveAFrame, "take a shut");
+    m.def("hello", &hello, "say hello");
 }

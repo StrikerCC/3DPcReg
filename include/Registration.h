@@ -11,7 +11,8 @@
 #include <vector>
 //#include <unordered_map>
 #include "nlohmann/json.hpp"
-#include "Eigen/Core"
+#include <Eigen/Core>
+
 #include "open3d/Open3D.h"
 #include "open3d/geometry/PointCloud.h"
 #include "FeatureCompute.h"
@@ -38,7 +39,7 @@ public:
 private:
     bool visualize = true;
 
-    std::vector<double> voxel_size_global {8};
+    std::vector<double> voxel_size_global {6};
     std::vector<double> voxel_size_local {5, 3, 1, 0.5};
 //    std::vector<verification::statistic_reg> statistics;
 

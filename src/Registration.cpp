@@ -117,8 +117,8 @@ open3d::pipelines::registration::RegistrationResult Registration::ransac(
 
     int max_iteration = 10000000;
     float confidence = 0.999;
-//    double max_correspondence_dis = voxel_size * 0.5;
-    double max_correspondence_dis = 2.0;
+    double max_correspondence_dis = voxel_size * 0.2;
+//    double max_correspondence_dis = 2.0;
 
     auto source = *src, target = *tgt;
     auto source_feature = *src_feature, target_feature = *tgt_feature;
